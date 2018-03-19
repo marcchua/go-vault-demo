@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	. "github.com/lanceplarsen/vaultdemo/config"
-	. "github.com/lanceplarsen/vaultdemo/dao"
-	. "github.com/lanceplarsen/vaultdemo/models"
-	. "github.com/lanceplarsen/vaultdemo/vault"
+	. "github.com/lanceplarsen/go-vault-demo/config"
+	. "github.com/lanceplarsen/go-vault-demo/dao"
+	. "github.com/lanceplarsen/go-vault-demo/models"
+	. "github.com/lanceplarsen/go-vault-demo/vault"
 )
 
 var config = Config{}
