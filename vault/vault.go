@@ -2,6 +2,7 @@ package vault
 
 import (
 	"log"
+	"strconv"
 	"time"
 
 	. "github.com/hashicorp/vault/api"
@@ -34,9 +35,19 @@ func (c *VaultConf) GetSecret(path string) (Secret, error) {
 }
 
 func (c *VaultConf) RenewToken() {
+	var renew bool
 	//See if the token we got is renewable
-	secret, err := client.Auth().Token().RenewSelf(0)
+	log.Println("Looking up token auth")
+	secret, err := client.Auth().Token().LookupSelf()
 	if err != nil {
+		log.Fatal("Token is not valid. Terminating")
+		return
+	}
+	log.Println("Token is valid")
+	renew = secret.Renewable
+	log.Println("Token renewable: " + strconv.FormatBool(renew))
+
+	if renew == false {
 		log.Println("Token is not renewable. Lifecycle disabled.")
 		return
 	}
