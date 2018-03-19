@@ -1,6 +1,7 @@
 package vault
 
 import (
+	"encoding/json"
 	"log"
 	"strconv"
 	"time"
@@ -36,6 +37,8 @@ func (c *VaultConf) GetSecret(path string) (Secret, error) {
 
 func (c *VaultConf) RenewToken() {
 	var renew bool
+	var ttl string
+	var maxttl string
 	//See if the token we got is renewable
 	log.Println("Looking up token auth")
 	lookup, err := client.Auth().Token().LookupSelf()
@@ -56,10 +59,16 @@ func (c *VaultConf) RenewToken() {
 	if err != nil {
 		panic(err)
 	}
-	//Create the object
+	//Get the creation ttl
+	ttl = lookup.Data["creation_ttl"].(json.Number).String()
+	maxttl = lookup.Data["explicit_max_ttl"].(json.Number).String()
+	log.Println("Token creation TTL: " + string(ttl) + "s")
+	log.Println("Token max TTL: " + string(maxttl) + "s")
+	//Create the object. TODO look at setting increment explicitly
 	renewer, err := client.NewRenewer(&RenewerInput{
 		Secret: secret,
 		Grace:  time.Duration(15 * time.Second),
+		//Increment: 60,
 	})
 	//Check if we were able to create the renewer
 	if err != nil {
