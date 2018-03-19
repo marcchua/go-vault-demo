@@ -2,11 +2,11 @@ package vault
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
 	"strconv"
 	"time"
-	"errors"
 
 	. "github.com/hashicorp/vault/api"
 	"github.com/lanceplarsen/go-vault-demo/config"
