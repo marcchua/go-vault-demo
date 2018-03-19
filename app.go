@@ -84,11 +84,11 @@ func init() {
 	log.Println("Authenticating to Vault")
 	log.Println("Using token authentication")
 	if len(config.Vault.Token) > 0 {
-		  log.Println("Vault token found in config file")
-	    vault.Token = config.Vault.Token
+		log.Println("Vault token found in config file")
+		vault.Token = config.Vault.Token
 	} else if len(os.Getenv("VAULT_TOKEN")) > 0 {
-			log.Println("Vault token found in VAULT_TOKEN")
-			vault.Token = os.Getenv("VAULT_TOKEN")
+		log.Println("Vault token found in VAULT_TOKEN")
+		vault.Token = os.Getenv("VAULT_TOKEN")
 	} else {
 		log.Fatal("Could get Vault token. Terminating.")
 	}

@@ -43,7 +43,7 @@ func (o *OrdersDAO) FindAll() ([]Order, error) {
 	return orders, err
 }
 
-func (o *OrdersDAO) DeleteAll() (error) {
+func (o *OrdersDAO) DeleteAll() error {
 	var ids []int
 	var res orm.Result
 	//Find the order ids
