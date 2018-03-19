@@ -3,13 +3,17 @@ package vault
 import (
 	"encoding/json"
 	"log"
+	"os"
 	"strconv"
 	"time"
+	"errors"
 
 	. "github.com/hashicorp/vault/api"
+	"github.com/lanceplarsen/go-vault-demo/config"
 )
 
 type VaultConf struct {
+	Config         config.Config
 	Server         string
 	Authentication string
 	Token          string
@@ -17,12 +21,66 @@ type VaultConf struct {
 
 var client *Client
 
-func (c *VaultConf) InitVault() error {
+func (v *VaultConf) InitVault() error {
 	var err error
+	var renew bool
+	var ttl string
+	var maxttl string
+
+	//Vault Init
+	v.Server = v.Config.Vault.Server
+	v.Authentication = v.Config.Vault.Authentication
+
+	//Auth to Vault
+	//TODO Add K8s
+	//TODO Add renewel support for tokens
+	log.Println("Client authenticating to Vault")
+
+	//Add case for auth type
+	log.Println("Using token authentication")
+	if len(v.Config.Vault.Token) > 0 {
+		log.Println("Vault token found in config file")
+		v.Token = v.Config.Vault.Token
+	} else if len(os.Getenv("VAULT_TOKEN")) > 0 {
+		log.Println("Vault token found in VAULT_TOKEN")
+		v.Token = os.Getenv("VAULT_TOKEN")
+	} else {
+		log.Fatal("Could get Vault token. Terminating.")
+	}
+
+	//If we found our token config the client
 	config := DefaultConfig()
 	client, err = NewClient(config)
-	client.SetAddress(c.Server)
-	client.SetToken(c.Token)
+	client.SetAddress(v.Server)
+	client.SetToken(v.Token)
+
+	//See if the token we got is renewable
+	log.Println("Looking up token")
+	lookup, err := client.Auth().Token().LookupSelf()
+	if err != nil {
+		//token is not valid so get out of here early
+		err := errors.New("Token is not valid.")
+		return err
+	}
+	log.Println("Token is valid")
+
+	//Get the creation ttl info so we can log it.
+	ttl = lookup.Data["creation_ttl"].(json.Number).String()
+	maxttl = lookup.Data["explicit_max_ttl"].(json.Number).String()
+	log.Println("Token creation TTL: " + string(ttl) + "s")
+	log.Println("Token max TTL: " + string(maxttl) + "s")
+
+	//Check renewable
+	renew = lookup.Data["renewable"].(bool)
+	log.Println("Token renewable: " + strconv.FormatBool(renew))
+	//If it's not renewable log it
+	if renew == false {
+		log.Println("Token is not renewable. Lifecycle disabled.")
+	} else {
+		//Start our renewal goroutine
+		go v.RenewToken()
+	}
+
 	return err
 }
 
@@ -36,34 +94,11 @@ func (c *VaultConf) GetSecret(path string) (Secret, error) {
 }
 
 func (c *VaultConf) RenewToken() {
-	var renew bool
-	var ttl string
-	var maxttl string
-	//See if the token we got is renewable
-	log.Println("Looking up token auth")
-	lookup, err := client.Auth().Token().LookupSelf()
-	if err != nil {
-		log.Fatal("Token is not valid. Terminating")
-		return
-	}
-	log.Println("Token is valid")
-	renew = lookup.Data["renewable"].(bool)
-	log.Println("Token renewable: " + strconv.FormatBool(renew))
-	//If it's not renewable exit
-	if renew == false {
-		log.Println("Token is not renewable. Lifecycle disabled.")
-		return
-	}
 	//If it is let's renew it by creating the payload
 	secret, err := client.Auth().Token().RenewSelf(0)
 	if err != nil {
 		panic(err)
 	}
-	//Get the creation ttl
-	ttl = lookup.Data["creation_ttl"].(json.Number).String()
-	maxttl = lookup.Data["explicit_max_ttl"].(json.Number).String()
-	log.Println("Token creation TTL: " + string(ttl) + "s")
-	log.Println("Token max TTL: " + string(maxttl) + "s")
 	//Create the object. TODO look at setting increment explicitly
 	renewer, err := client.NewRenewer(&RenewerInput{
 		Secret: secret,

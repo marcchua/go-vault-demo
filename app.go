@@ -73,45 +73,21 @@ func init() {
 	log.Println("Starting server initialization")
 	//Get our config from the file
 	config.Read()
+	vault.Config = config
 
-	//Vault Init
-	vault.Server = config.Vault.Server
-	vault.Authentication = config.Vault.Authentication
-
-	//Auth to Vault
-	//TODO Add K8s
-	//TODO Add renewel support for tokens
-	log.Println("Authenticating to Vault")
-	log.Println("Using token authentication")
-	if len(config.Vault.Token) > 0 {
-		log.Println("Vault token found in config file")
-		vault.Token = config.Vault.Token
-	} else if len(os.Getenv("VAULT_TOKEN")) > 0 {
-		log.Println("Vault token found in VAULT_TOKEN")
-		vault.Token = os.Getenv("VAULT_TOKEN")
-	} else {
-		log.Fatal("Could get Vault token. Terminating.")
-	}
-
-	//Init the Vault
+	log.Println("Starting vault initialization")
+	//Vault init
 	err := vault.InitVault()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	//Now that we have a Vault token we can see if we can renew it.
-	//If it's renewable we will start renew loop in this Goroutine
-	go vault.RenewToken()
-
-	//Block execution here for a few seconds. TODO Create a channel that responds to good auth.
-	time.Sleep(5 * time.Second)
+	log.Println("Vault initialization complete")
 
 	//Get our DB secrets
 	secret, err := vault.GetSecret(config.DB.Role)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	//Start our Goroutine Renewal for the DB creds
 	go vault.RenewSecret(secret)
 
@@ -121,7 +97,7 @@ func init() {
 	dao.User = secret.Data["username"].(string)
 	dao.Password = secret.Data["password"].(string)
 
-	//Check our conn
+	//Check our DB Conn
 	log.Println("Starting DB initialization")
 	err = dao.Connect()
 	if err != nil {
