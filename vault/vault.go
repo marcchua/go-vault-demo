@@ -38,20 +38,25 @@ func (c *VaultConf) RenewToken() {
 	var renew bool
 	//See if the token we got is renewable
 	log.Println("Looking up token auth")
-	secret, err := client.Auth().Token().LookupSelf()
+	lookup, err := client.Auth().Token().LookupSelf()
 	if err != nil {
 		log.Fatal("Token is not valid. Terminating")
 		return
 	}
 	log.Println("Token is valid")
-	renew = secret.Renewable
+	renew = lookup.Data["renewable"].(bool)
 	log.Println("Token renewable: " + strconv.FormatBool(renew))
-
+	//If it's not renewable exit
 	if renew == false {
 		log.Println("Token is not renewable. Lifecycle disabled.")
 		return
 	}
-	//If it is let's renew it
+	//If it is let's renew it by creating the payload
+	secret, err := client.Auth().Token().RenewSelf(0)
+	if err != nil {
+		panic(err)
+	}
+	//Create the object
 	renewer, err := client.NewRenewer(&RenewerInput{
 		Secret: secret,
 		Grace:  time.Duration(15 * time.Second),

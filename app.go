@@ -103,6 +103,9 @@ func init() {
 	//If it's renewable we will start renew loop in this Goroutine
 	go vault.RenewToken()
 
+	//Block execution here for a few seconds. TODO Create a channel that responds to good auth.
+	time.Sleep(5 * time.Second)
+
 	//Get our DB secrets
 	secret, err := vault.GetSecret(config.DB.Role)
 	if err != nil {
@@ -136,7 +139,7 @@ func main() {
 	r.HandleFunc("/api/orders", AllOrdersEndpoint).Methods("GET")
 	r.HandleFunc("/api/orders", CreateOrderEndpoint).Methods("POST")
 	r.HandleFunc("/api/orders", DeleteOrdersEndpoint).Methods("DELETE")
-	log.Println("Server is now running on port 3000")
+	log.Println("Server is now accepting requests on port 3000")
 	//Catch SIGINT so we can revoke all our secrets gracefully. TODO
 	var gracefulStop = make(chan os.Signal)
 	//signal.Notify(gracefulStop, syscall.SIGTERM)
