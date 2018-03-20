@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/gorilla/mux"
 	. "github.com/lanceplarsen/go-vault-demo/config"
@@ -118,13 +117,12 @@ func main() {
 	log.Println("Server is now accepting requests on port 3000")
 	//Catch SIGINT so we can revoke all our secrets gracefully. TODO
 	var gracefulStop = make(chan os.Signal)
-	//signal.Notify(gracefulStop, syscall.SIGTERM)
+	signal.Notify(gracefulStop, syscall.SIGTERM)
 	signal.Notify(gracefulStop, syscall.SIGINT)
 	go func() {
 		sig := <-gracefulStop
 		fmt.Printf("caught sig: %+v", sig)
-		log.Println("Wait for 2 second to finish processing")
-		time.Sleep(2 * time.Second)
+		vault.CloseVault()
 		os.Exit(0)
 	}()
 	//Start server

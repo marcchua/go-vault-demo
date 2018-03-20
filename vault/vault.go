@@ -110,9 +110,13 @@ func (v *VaultConf) InitVault() error {
 func (c *VaultConf) GetSecret(path string) (Secret, error) {
 	log.Println("Starting secret retrieval")
 	secret, err := client.Logical().Read(path)
-	log.Println("Got Lease: " + secret.LeaseID)
-	log.Println("Got Username: " + secret.Data["username"].(string))
-	log.Println("Got Password: " + secret.Data["password"].(string))
+	if err != nil {
+		//Do nothing
+	} else {
+		log.Println("Got Lease: " + secret.LeaseID)
+		log.Println("Got Username: " + secret.Data["username"].(string))
+		log.Println("Got Password: " + secret.Data["password"].(string))
+	}
 	return *secret, err
 }
 
@@ -177,4 +181,8 @@ func (c *VaultConf) RenewSecret(secret Secret) error {
 			log.Printf("Successfully renewed lease " + renewal.Secret.LeaseID + " at: " + renewal.RenewedAt.String())
 		}
 	}
+}
+func (v *VaultConf) CloseVault() {
+	log.Println("Revoking " + v.Token)
+	client.Auth().Token().RevokeSelf(v.Token)
 }
