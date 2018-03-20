@@ -21,6 +21,8 @@ type Vault struct {
 	Server         string
 	Authentication string
 	Token          string
+	Role           string
+	JWT            string `toml:"service-account-token-file"`
 }
 
 func (c *Config) Read() {

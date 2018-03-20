@@ -3,6 +3,7 @@ package vault
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -31,27 +32,49 @@ func (v *VaultConf) InitVault() error {
 	v.Server = v.Config.Vault.Server
 	v.Authentication = v.Config.Vault.Authentication
 
-	//Auth to Vault
-	//TODO Add K8s
-	//TODO Add renewel support for tokens
-	log.Println("Client authenticating to Vault")
-
-	//Add case for auth type
-	log.Println("Using token authentication")
-	if len(v.Config.Vault.Token) > 0 {
-		log.Println("Vault token found in config file")
-		v.Token = v.Config.Vault.Token
-	} else if len(os.Getenv("VAULT_TOKEN")) > 0 {
-		log.Println("Vault token found in VAULT_TOKEN")
-		v.Token = os.Getenv("VAULT_TOKEN")
-	} else {
-		log.Fatal("Could get Vault token. Terminating.")
-	}
-
-	//If we found our token config the client
+	//Default client
 	config := DefaultConfig()
 	client, err = NewClient(config)
+	//Set the address
 	client.SetAddress(v.Server)
+
+	//Auth to Vault
+	log.Println("Client authenticating to Vault")
+	switch v.Authentication {
+	case "token":
+		log.Println("Using token authentication")
+		if len(v.Config.Vault.Token) > 0 {
+			log.Println("Vault token found in config file")
+			v.Token = v.Config.Vault.Token
+		} else if len(os.Getenv("VAULT_TOKEN")) > 0 {
+			log.Println("Vault token found in env VAULT_TOKEN")
+			v.Token = os.Getenv("VAULT_TOKEN")
+		} else {
+			log.Fatal("Could get Vault token. Terminating.")
+		}
+	case "kubernetes":
+		log.Println("Using kubernetes authentication")
+		log.Println("Role is " + v.Config.Vault.Role)
+		log.Println("Service account JWT file is " + v.Config.Vault.JWT)
+		//Get the JWT from POD
+		jwt, err := ioutil.ReadFile(v.Config.Vault.JWT)
+		//Payload
+		data := map[string]interface{}{"jwt": string(jwt), "role": v.Config.Vault.Role}
+		//Auth with K8s vault
+		secret, err := client.Logical().Write("auth/kubernetes/login", data)
+		//Log our metadata
+		log.Println("Got Vault token. Dumping K8s metadata...")
+		log.Println(secret.Auth.Metadata)
+		//Get the client token
+		v.Token = secret.Auth.ClientToken
+		if err != nil {
+			return err
+		}
+	default:
+		log.Fatal("Auth method " + v.Authentication + " is not supported")
+	}
+
+	//Set the token we got from above
 	client.SetToken(v.Token)
 
 	//See if the token we got is renewable
@@ -75,7 +98,7 @@ func (v *VaultConf) InitVault() error {
 	log.Println("Token renewable: " + strconv.FormatBool(renew))
 	//If it's not renewable log it
 	if renew == false {
-		log.Println("Token is not renewable. Lifecycle disabled.")
+		log.Println("Token is not renewable. Token lifecycle disabled.")
 	} else {
 		//Start our renewal goroutine
 		go v.RenewToken()
