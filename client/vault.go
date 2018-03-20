@@ -1,4 +1,4 @@
-package vault
+package client
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 	"github.com/lanceplarsen/go-vault-demo/config"
 )
 
-type VaultConf struct {
+type Vault struct {
 	Config         config.Config
 	Server         string
 	Authentication string
@@ -22,7 +22,7 @@ type VaultConf struct {
 
 var client *Client
 
-func (v *VaultConf) InitVault() error {
+func (v *Vault) InitVault() error {
 	var err error
 	var renew bool
 	var ttl string
@@ -107,7 +107,7 @@ func (v *VaultConf) InitVault() error {
 	return err
 }
 
-func (c *VaultConf) GetSecret(path string) (Secret, error) {
+func (c *Vault) GetSecret(path string) (Secret, error) {
 	log.Println("Starting secret retrieval")
 	secret, err := client.Logical().Read(path)
 	if err != nil {
@@ -120,7 +120,7 @@ func (c *VaultConf) GetSecret(path string) (Secret, error) {
 	return *secret, err
 }
 
-func (c *VaultConf) RenewToken() {
+func (c *Vault) RenewToken() {
 	//If it is let's renew it by creating the payload
 	secret, err := client.Auth().Token().RenewSelf(0)
 	if err != nil {
@@ -150,12 +150,12 @@ func (c *VaultConf) RenewToken() {
 			//App will terminate after token cannot be renewed. TODO: Get the remaining token duration and schedule shutdown.
 			log.Fatal("Cannot renew token with accessor " + secret.Auth.Accessor + ". App will terminate.")
 		case renewal := <-renewer.RenewCh():
-			log.Printf("Successfully renewed accessor " + renewal.Secret.Auth.Accessor + " at: " + renewal.RenewedAt.String())
+			log.Printf("Successfully renewed token accessor " + renewal.Secret.Auth.Accessor + " at: " + renewal.RenewedAt.String())
 		}
 	}
 }
 
-func (c *VaultConf) RenewSecret(secret Secret) error {
+func (c *Vault) RenewSecret(secret Secret) error {
 	renewer, err := client.NewRenewer(&RenewerInput{
 		Secret: &secret,
 		Grace:  time.Duration(15 * time.Second),
@@ -178,11 +178,38 @@ func (c *VaultConf) RenewSecret(secret Secret) error {
 			//Renewal is now past max TTL. Let app die reschedule it elsewhere. TODO: Allow for getting new creds here.
 			log.Fatal("Cannot renew " + secret.LeaseID + ". App will terminate.")
 		case renewal := <-renewer.RenewCh():
-			log.Printf("Successfully renewed lease " + renewal.Secret.LeaseID + " at: " + renewal.RenewedAt.String())
+			log.Printf("Successfully renewed secret lease " + renewal.Secret.LeaseID + " at: " + renewal.RenewedAt.String())
 		}
 	}
 }
-func (v *VaultConf) CloseVault() {
+
+func (v *Vault) Encrypt(plaintext string) string {
+	var customer string
+	data := map[string]interface{}{"plaintext": plaintext}
+	secret, err := client.Logical().Write("/transit/encrypt/order", data)
+	cipher := secret.Data["ciphertext"].(string)
+	if err != nil {
+		customer = plaintext
+	} else {
+		customer = cipher
+	}
+	return customer
+}
+
+func (v *Vault) Decrypt(cipher string) string {
+	var customer string
+	data := map[string]interface{}{"ciphertext": cipher}
+	secret, err := client.Logical().Write("/transit/decrypt/order", data)
+	plaintext := secret.Data["plaintext"].(string)
+	if err != nil {
+		customer = cipher
+	} else {
+		customer = plaintext
+	}
+	return customer
+}
+
+func (v *Vault) CloseVault() {
 	log.Println("Revoking " + v.Token)
 	client.Auth().Token().RevokeSelf(v.Token)
 }

@@ -10,18 +10,18 @@ import (
 	"syscall"
 
 	"github.com/gorilla/mux"
-	. "github.com/lanceplarsen/go-vault-demo/config"
-	. "github.com/lanceplarsen/go-vault-demo/dao"
-	. "github.com/lanceplarsen/go-vault-demo/models"
-	. "github.com/lanceplarsen/go-vault-demo/vault"
+	"github.com/lanceplarsen/go-vault-demo/client"
+	"github.com/lanceplarsen/go-vault-demo/config"
+	"github.com/lanceplarsen/go-vault-demo/dao"
+	"github.com/lanceplarsen/go-vault-demo/models"
 )
 
-var config = Config{}
-var dao = OrdersDAO{}
-var vault = VaultConf{}
+var configurator = config.Config{}
+var odao = dao.OrderDAO{}
+var vault = client.Vault{}
 
 func AllOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
-	orders, err := dao.FindAll()
+	orders, err := odao.FindAll()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -35,13 +35,13 @@ func AllOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func CreateOrderEndpoint(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var order Order
+	var order models.Order
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	//Respond with the updated order
-	order, err := dao.Insert(order)
+	order, err := odao.Insert(order)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -50,7 +50,7 @@ func CreateOrderEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
-	if err := dao.DeleteAll(); err != nil {
+	if err := odao.DeleteAll(); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -71,8 +71,8 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 func init() {
 	log.Println("Starting server initialization")
 	//Get our config from the file
-	config.Read()
-	vault.Config = config
+	configurator.Read()
+	vault.Config = configurator
 
 	log.Println("Starting vault initialization")
 	//Vault init
@@ -83,7 +83,7 @@ func init() {
 	log.Println("Vault initialization complete")
 
 	//Get our DB secrets
-	secret, err := vault.GetSecret(config.DB.Role)
+	secret, err := vault.GetSecret(configurator.DB.Role)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,14 +91,15 @@ func init() {
 	go vault.RenewSecret(secret)
 
 	//DAO config
-	dao.Url = config.DB.Server
-	dao.Database = config.DB.Name
-	dao.User = secret.Data["username"].(string)
-	dao.Password = secret.Data["password"].(string)
+	odao.Vault = &vault
+	odao.Url = configurator.DB.Server
+	odao.Database = configurator.DB.Name
+	odao.User = secret.Data["username"].(string)
+	odao.Password = secret.Data["password"].(string)
 
 	//Check our DB Conn
 	log.Println("Starting DB initialization")
-	err = dao.Connect()
+	err = odao.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}

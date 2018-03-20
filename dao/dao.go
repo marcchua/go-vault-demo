@@ -1,24 +1,27 @@
 package dao
 
 import (
+	"encoding/base64"
 	"log"
 	"time"
 
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
+	. "github.com/lanceplarsen/go-vault-demo/client"
 	. "github.com/lanceplarsen/go-vault-demo/models"
 )
 
-type OrdersDAO struct {
+type OrderDAO struct {
 	Url      string
 	Database string
 	User     string
 	Password string
+	Vault    *Vault
 }
 
 var db *pg.DB
 
-func (o *OrdersDAO) Connect() error {
+func (o *OrderDAO) Connect() error {
 	db = pg.Connect(&pg.Options{
 		User:     o.User,
 		Password: o.Password,
@@ -31,19 +34,27 @@ func (o *OrdersDAO) Connect() error {
 	return err
 }
 
-func (o *OrdersDAO) Close() error {
+func (o *OrderDAO) Close() error {
 	err := db.Close()
 	return err
 
 }
 
-func (o *OrdersDAO) FindAll() ([]Order, error) {
-	var orders []Order
-	err := db.Model(&orders).Select()
-	return orders, err
+func (o *OrderDAO) FindAll() ([]Order, error) {
+	var eOrders []Order
+	var dOrders []Order
+	err := db.Model(&eOrders).Select()
+	//Decrypt these. TODO Could use a batch decyrpt opp here
+	for _, order := range eOrders {
+		eOrder := o.Vault.Decrypt(order.CustomerName)
+		sDec, _ := base64.StdEncoding.DecodeString(eOrder)
+		order.CustomerName = string(sDec)
+		dOrders = append(dOrders, order)
+	}
+	return dOrders, err
 }
 
-func (o *OrdersDAO) DeleteAll() error {
+func (o *OrderDAO) DeleteAll() error {
 	var ids []int
 	var res orm.Result
 	//Find the order ids
@@ -59,9 +70,13 @@ func (o *OrdersDAO) DeleteAll() error {
 	return err
 }
 
-func (o *OrdersDAO) Insert(order Order) (Order, error) {
+func (o *OrderDAO) Insert(order Order) (Order, error) {
 	//Add a timestamp
 	order.OrderDate = time.Now()
+	//Encrypt it
+	encode := base64.StdEncoding.EncodeToString([]byte(order.CustomerName))
+	//Get plaintext customer
+	order.CustomerName = o.Vault.Encrypt(encode)
 	//Insert the order
 	err := db.Insert(&order)
 	return order, err
