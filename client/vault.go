@@ -50,7 +50,7 @@ func (v *Vault) Init() error {
 			token = v.Config.Vault.Token
 			log.Println("Got token from config file")
 		} else {
-			log.Fatal("Could get Vault token. Terminating.")
+			log.Fatal("Could not get Vault token. Terminating.")
 		}
 		client.SetToken(token)
 	case "kubernetes":
