@@ -72,10 +72,16 @@ func init() {
 	log.Println("Starting server initialization")
 	//Get our config from the file
 	configurator.Read()
-	vault.Config = configurator
-
 	log.Println("Starting vault initialization")
-	//Vault init
+	//Server params
+	vault.Server = configurator.Vault.Server
+	vault.Authentication = configurator.Vault.Authentication
+	//Token param
+	vault.Token = configurator.Vault.Token
+	//K8s params
+	vault.Role = configurator.Vault.Role
+	vault.JWT = configurator.Vault.JWT
+	//Init it
 	err := vault.Init()
 	if err != nil {
 		log.Fatal(err)

@@ -9,14 +9,14 @@ import (
 	"time"
 
 	. "github.com/hashicorp/vault/api"
-	"github.com/lanceplarsen/go-vault-demo/config"
 )
 
 type Vault struct {
-	Config         config.Config
 	Server         string
 	Authentication string
 	Token          string
+	Role           string
+	JWT            string
 }
 
 var client *Client
@@ -27,10 +27,6 @@ func (v *Vault) Init() error {
 	var ttl string
 	var maxttl string
 	var token string
-
-	//Vault Init
-	v.Server = v.Config.Vault.Server
-	v.Authentication = v.Config.Vault.Authentication
 
 	//Default client
 	config := DefaultConfig()
@@ -46,8 +42,8 @@ func (v *Vault) Init() error {
 		if len(client.Token()) > 0 {
 			log.Println("Got token from VAULT_TOKEN")
 			break
-		} else if len(v.Config.Vault.Token) > 0 {
-			token = v.Config.Vault.Token
+		} else if len(v.Token) > 0 {
+			token = v.Token
 			log.Println("Got token from config file")
 		} else {
 			log.Fatal("Could not get Vault token. Terminating.")
@@ -55,15 +51,15 @@ func (v *Vault) Init() error {
 		client.SetToken(token)
 	case "kubernetes":
 		log.Println("Using kubernetes authentication")
-		log.Println("Role is " + v.Config.Vault.Role)
-		log.Println("Service account JWT file is " + v.Config.Vault.JWT)
+		log.Println("Role is " + v.Role)
+		log.Println("Service account JWT file is " + v.JWT)
 		//Get the JWT from POD
-		jwt, err := ioutil.ReadFile(v.Config.Vault.JWT)
+		jwt, err := ioutil.ReadFile(v.JWT)
 		if err != nil {
 			return errors.New("Unable to parse JWT from file")
 		}
 		//Payload
-		data := map[string]interface{}{"jwt": string(jwt), "role": v.Config.Vault.Role}
+		data := map[string]interface{}{"jwt": string(jwt), "role": v.Role}
 		//Auth with K8s vault
 		secret, err := client.Logical().Write("auth/kubernetes/login", data)
 		if err != nil {
