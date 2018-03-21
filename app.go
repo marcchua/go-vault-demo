@@ -12,16 +12,16 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/lanceplarsen/go-vault-demo/client"
 	"github.com/lanceplarsen/go-vault-demo/config"
-	"github.com/lanceplarsen/go-vault-demo/dao"
+	. "github.com/lanceplarsen/go-vault-demo/dao"
 	"github.com/lanceplarsen/go-vault-demo/models"
 )
 
 var configurator = config.Config{}
-var odao = dao.OrderDAO{}
 var vault = client.Vault{}
+var dao = OrderDAO{}
 
 func AllOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
-	orders, err := odao.FindAll()
+	orders, err := dao.FindAll()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -41,7 +41,7 @@ func CreateOrderEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//Respond with the updated order
-	order, err := odao.Insert(order)
+	order, err := dao.Insert(order)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -50,7 +50,7 @@ func CreateOrderEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
-	if err := odao.DeleteAll(); err != nil {
+	if err := dao.DeleteAll(); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -76,7 +76,7 @@ func init() {
 
 	log.Println("Starting vault initialization")
 	//Vault init
-	err := vault.InitVault()
+	err := vault.Init()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,15 +91,15 @@ func init() {
 	go vault.RenewSecret(secret)
 
 	//DAO config
-	odao.Vault = &vault
-	odao.Url = configurator.DB.Server
-	odao.Database = configurator.DB.Name
-	odao.User = secret.Data["username"].(string)
-	odao.Password = secret.Data["password"].(string)
+	dao.Vault = &vault
+	dao.Url = configurator.DB.Server
+	dao.Database = configurator.DB.Name
+	dao.User = secret.Data["username"].(string)
+	dao.Password = secret.Data["password"].(string)
 
 	//Check our DB Conn
 	log.Println("Starting DB initialization")
-	err = odao.Connect()
+	err = dao.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func main() {
 	go func() {
 		sig := <-gracefulStop
 		fmt.Printf("caught sig: %+v", sig)
-		vault.CloseVault()
+		vault.Close()
 		os.Exit(0)
 	}()
 	//Start server

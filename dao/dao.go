@@ -2,6 +2,7 @@ package dao
 
 import (
 	"encoding/base64"
+	"errors"
 	"log"
 	"time"
 
@@ -46,10 +47,14 @@ func (o *OrderDAO) FindAll() ([]Order, error) {
 	err := db.Model(&eOrders).Select()
 	//Decrypt these. TODO Could use a batch decyrpt opp here
 	for _, order := range eOrders {
-		eOrder := o.Vault.Decrypt(order.CustomerName)
-		sDec, _ := base64.StdEncoding.DecodeString(eOrder)
-		order.CustomerName = string(sDec)
-		dOrders = append(dOrders, order)
+		eOrder, err := o.Vault.Decrypt(order.CustomerName)
+		if err != nil {
+			log.Println("Unable to decrypt order: " + string(order.Id))
+		} else {
+			sDec, _ := base64.StdEncoding.DecodeString(eOrder)
+			order.CustomerName = string(sDec)
+			dOrders = append(dOrders, order)
+		}
 	}
 	return dOrders, err
 }
@@ -76,8 +81,13 @@ func (o *OrderDAO) Insert(order Order) (Order, error) {
 	//Encrypt it
 	encode := base64.StdEncoding.EncodeToString([]byte(order.CustomerName))
 	//Get plaintext customer
-	order.CustomerName = o.Vault.Encrypt(encode)
-	//Insert the order
-	err := db.Insert(&order)
+	cipher, err := o.Vault.Encrypt(encode)
+	if err != nil {
+		return order, errors.New("Unable to encrypt order")
+	} else {
+		//Insert the order
+		order.CustomerName = cipher
+		err = db.Insert(&order)
+	}
 	return order, err
 }

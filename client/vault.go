@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"os"
 	"strconv"
 	"time"
 
@@ -22,11 +21,12 @@ type Vault struct {
 
 var client *Client
 
-func (v *Vault) InitVault() error {
+func (v *Vault) Init() error {
 	var err error
 	var renew bool
 	var ttl string
 	var maxttl string
+	var token string
 
 	//Vault Init
 	v.Server = v.Config.Vault.Server
@@ -43,47 +43,48 @@ func (v *Vault) InitVault() error {
 	switch v.Authentication {
 	case "token":
 		log.Println("Using token authentication")
-		if len(v.Config.Vault.Token) > 0 {
-			log.Println("Vault token found in config file")
-			v.Token = v.Config.Vault.Token
-		} else if len(os.Getenv("VAULT_TOKEN")) > 0 {
-			log.Println("Vault token found in env VAULT_TOKEN")
-			v.Token = os.Getenv("VAULT_TOKEN")
+		if len(client.Token()) > 0 {
+			log.Println("Got token from VAULT_TOKEN")
+			break
+		} else if len(v.Config.Vault.Token) > 0 {
+			token = v.Config.Vault.Token
+			log.Println("Got token from config file")
 		} else {
 			log.Fatal("Could get Vault token. Terminating.")
 		}
+		client.SetToken(token)
 	case "kubernetes":
 		log.Println("Using kubernetes authentication")
 		log.Println("Role is " + v.Config.Vault.Role)
 		log.Println("Service account JWT file is " + v.Config.Vault.JWT)
 		//Get the JWT from POD
 		jwt, err := ioutil.ReadFile(v.Config.Vault.JWT)
+		if err != nil {
+			return errors.New("Unable to parse JWT from file")
+		}
 		//Payload
 		data := map[string]interface{}{"jwt": string(jwt), "role": v.Config.Vault.Role}
 		//Auth with K8s vault
 		secret, err := client.Logical().Write("auth/kubernetes/login", data)
+		if err != nil {
+			return err
+		}
 		//Log our metadata
 		log.Println("Got Vault token. Dumping K8s metadata...")
 		log.Println(secret.Auth.Metadata)
 		//Get the client token
-		v.Token = secret.Auth.ClientToken
-		if err != nil {
-			return err
-		}
+		token = secret.Auth.ClientToken
+		client.SetToken(token)
 	default:
 		log.Fatal("Auth method " + v.Authentication + " is not supported")
 	}
 
-	//Set the token we got from above
-	client.SetToken(v.Token)
-
 	//See if the token we got is renewable
 	log.Println("Looking up token")
 	lookup, err := client.Auth().Token().LookupSelf()
+	//If token is not valid so get out of here early
 	if err != nil {
-		//token is not valid so get out of here early
-		err := errors.New("Token is not valid.")
-		return err
+		return errors.New("Token is not valid.")
 	}
 	log.Println("Token is valid")
 
@@ -120,11 +121,11 @@ func (c *Vault) GetSecret(path string) (Secret, error) {
 	return *secret, err
 }
 
-func (c *Vault) RenewToken() {
+func (v *Vault) RenewToken() {
 	//If it is let's renew it by creating the payload
 	secret, err := client.Auth().Token().RenewSelf(0)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	//Create the object. TODO look at setting increment explicitly
 	renewer, err := client.NewRenewer(&RenewerInput{
@@ -134,7 +135,7 @@ func (c *Vault) RenewToken() {
 	})
 	//Check if we were able to create the renewer
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	log.Println("Starting token lifecycle management for accessor " + secret.Auth.Accessor)
 	//Start the renewer
@@ -155,14 +156,14 @@ func (c *Vault) RenewToken() {
 	}
 }
 
-func (c *Vault) RenewSecret(secret Secret) error {
+func (v *Vault) RenewSecret(secret Secret) error {
 	renewer, err := client.NewRenewer(&RenewerInput{
 		Secret: &secret,
 		Grace:  time.Duration(15 * time.Second),
 	})
 	//Check if we were able to create the renewer
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	log.Println("Starting secret lifecycle management for lease " + secret.LeaseID)
 	//Start the renewer
@@ -183,33 +184,33 @@ func (c *Vault) RenewSecret(secret Secret) error {
 	}
 }
 
-func (v *Vault) Encrypt(plaintext string) string {
+func (v *Vault) Encrypt(plaintext string) (string, error) {
 	var customer string
 	data := map[string]interface{}{"plaintext": plaintext}
 	secret, err := client.Logical().Write("/transit/encrypt/order", data)
-	cipher := secret.Data["ciphertext"].(string)
 	if err != nil {
-		customer = plaintext
+		//Do Nothing
 	} else {
+		cipher := secret.Data["ciphertext"].(string)
 		customer = cipher
 	}
-	return customer
+	return customer, err
 }
 
-func (v *Vault) Decrypt(cipher string) string {
+func (v *Vault) Decrypt(cipher string) (string, error) {
 	var customer string
 	data := map[string]interface{}{"ciphertext": cipher}
 	secret, err := client.Logical().Write("/transit/decrypt/order", data)
-	plaintext := secret.Data["plaintext"].(string)
 	if err != nil {
-		customer = cipher
+		//Do Nothing
 	} else {
+		plaintext := secret.Data["plaintext"].(string)
 		customer = plaintext
 	}
-	return customer
+	return customer, err
 }
 
-func (v *Vault) CloseVault() {
-	log.Println("Revoking " + v.Token)
-	client.Auth().Token().RevokeSelf(v.Token)
+func (v *Vault) Close() {
+	log.Println("Revoking " + client.Token())
+	client.Auth().Token().RevokeSelf(client.Token())
 }
