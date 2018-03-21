@@ -51,8 +51,18 @@ func (v *Vault) Init() error {
 		client.SetToken(token)
 	case "kubernetes":
 		log.Println("Using kubernetes authentication")
-		log.Println("Role is " + v.Role)
-		log.Println("Service account JWT file is " + v.JWT)
+		//Check Role
+		if len(v.Role) > 0 {
+			log.Println("Role is " + v.Role)
+		} else {
+			return errors.New("K8s role not in config.")
+		}
+		//Check JWT
+		if len(v.JWT) > 0 {
+			log.Println("Service account JWT file is " + v.JWT)
+		} else {
+			return errors.New("K8s JWT file not in config.")
+		}
 		//Get the JWT from POD
 		jwt, err := ioutil.ReadFile(v.JWT)
 		if err != nil {
@@ -100,7 +110,6 @@ func (v *Vault) Init() error {
 		//Start our renewal goroutine
 		go v.RenewToken()
 	}
-
 	return err
 }
 
