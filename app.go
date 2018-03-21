@@ -116,7 +116,7 @@ func main() {
 	r.HandleFunc("/api/orders", CreateOrderEndpoint).Methods("POST")
 	r.HandleFunc("/api/orders", DeleteOrdersEndpoint).Methods("DELETE")
 	log.Println("Server is now accepting requests on port 3000")
-	//Catch SIGINT so we can revoke all our secrets gracefully. TODO
+	//Catch SIGINT AND SIGTERM to tear down tokens and secrets
 	var gracefulStop = make(chan os.Signal)
 	signal.Notify(gracefulStop, syscall.SIGTERM)
 	signal.Notify(gracefulStop, syscall.SIGINT)
