@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
-	"time"
 
 	. "github.com/hashicorp/vault/api"
 )
@@ -135,7 +134,7 @@ func (v *Vault) RenewToken() {
 	//Create the object. TODO look at setting increment explicitly
 	renewer, err := client.NewRenewer(&RenewerInput{
 		Secret: secret,
-		Grace:  time.Duration(15 * time.Second),
+		//Grace:  time.Duration(15 * time.Second),
 		//Increment: 60,
 	})
 	//Check if we were able to create the renewer
@@ -164,7 +163,7 @@ func (v *Vault) RenewToken() {
 func (v *Vault) RenewSecret(secret Secret) error {
 	renewer, err := client.NewRenewer(&RenewerInput{
 		Secret: &secret,
-		Grace:  time.Duration(15 * time.Second),
+		//Grace:  time.Duration(15 * time.Second),
 	})
 	//Check if we were able to create the renewer
 	if err != nil {
