@@ -1,8 +1,2 @@
 [database]
-server="localhost:5432"
-name="postgres"
 role="database/creds/order"
-[vault]
-server="localhost:8200"
-authentication="token"
-token="00000000-000-0000-0000-000000000000"
