@@ -76,11 +76,10 @@ func init() {
 	//Server params
 	vault.Server = configurator.Vault.Server
 	vault.Authentication = configurator.Vault.Authentication
-	//Token param
-	vault.Token = configurator.Vault.Token
-	//K8s params
+	//Auth param
+	vault.Credential = configurator.Vault.Credential
+	//Optional role param for auth
 	vault.Role = configurator.Vault.Role
-	vault.JWT = configurator.Vault.JWT
 	//Init it
 	err := vault.Init()
 	if err != nil {
@@ -88,8 +87,16 @@ func init() {
 	}
 	log.Println("Vault initialization complete")
 
+	log.Println("Starting DB initialization")
+	//Make sure we got a DB role
+	if len(configurator.Database.Role) > 0 {
+		log.Println("DB role is " + configurator.Database.Role)
+	} else {
+		log.Fatal("Could not get DB role from config.")
+	}
+
 	//Get our DB secrets
-	secret, err := vault.GetSecret(configurator.DB.Role)
+	secret, err := vault.GetSecret(configurator.Database.Role)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -98,20 +105,18 @@ func init() {
 
 	//DAO config
 	dao.Vault = &vault
-	dao.Url = configurator.DB.Server
-	dao.Database = configurator.DB.Name
+	dao.Url = configurator.Database.Server
+	dao.Database = configurator.Database.Name
 	dao.User = secret.Data["username"].(string)
 	dao.Password = secret.Data["password"].(string)
 
 	//Check our DB Conn
-	log.Println("Starting DB initialization")
 	err = dao.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("DB initialization complete")
 
-	//Looks good
 	log.Println("Server initialization complete")
 }
 

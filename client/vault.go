@@ -13,9 +13,8 @@ import (
 type Vault struct {
 	Server         string
 	Authentication string
-	Token          string
+	Credential     string
 	Role           string
-	JWT            string
 }
 
 var client *Client
@@ -41,8 +40,8 @@ func (v *Vault) Init() error {
 		if len(client.Token()) > 0 {
 			log.Println("Got token from VAULT_TOKEN")
 			break
-		} else if len(v.Token) > 0 {
-			token = v.Token
+		} else if len(v.Credential) > 0 {
+			token = v.Credential
 			log.Println("Got token from config file")
 		} else {
 			log.Fatal("Could not get Vault token. Terminating.")
@@ -57,13 +56,13 @@ func (v *Vault) Init() error {
 			return errors.New("K8s role not in config.")
 		}
 		//Check JWT
-		if len(v.JWT) > 0 {
-			log.Println("Service account JWT file is " + v.JWT)
+		if len(v.Credential) > 0 {
+			log.Println("Service account JWT file is " + v.Credential)
 		} else {
 			return errors.New("K8s JWT file not in config.")
 		}
 		//Get the JWT from POD
-		jwt, err := ioutil.ReadFile(v.JWT)
+		jwt, err := ioutil.ReadFile(v.Credential)
 		if err != nil {
 			return errors.New("Unable to parse JWT from file")
 		}
@@ -89,7 +88,7 @@ func (v *Vault) Init() error {
 	lookup, err := client.Auth().Token().LookupSelf()
 	//If token is not valid so get out of here early
 	if err != nil {
-		return errors.New("Token is not valid.")
+		return err
 	}
 	log.Println("Token is valid")
 
