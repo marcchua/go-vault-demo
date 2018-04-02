@@ -5,3 +5,4 @@ role="database/creds/order"
 [vault]
 server="localhost:8200"
 authentication="token"
+credential="00000000-0000-0000-0000-000000000000"
