@@ -30,8 +30,10 @@ func (v *Vault) Init() error {
 	config := DefaultConfig()
 	client, err = NewClient(config)
 	//Set the address
-	client.SetAddress(v.Server)
-
+	err = client.SetAddress(v.Server)
+	if err != nil {
+		return err
+	}
 	//Auth to Vault
 	log.Println("Client authenticating to Vault")
 	switch v.Authentication {
@@ -112,10 +114,10 @@ func (v *Vault) Init() error {
 }
 
 func (c *Vault) GetSecret(path string) (Secret, error) {
-	log.Println("Starting secret retrieval")
+	log.Println("Getting secret: "  + path)
 	secret, err := client.Logical().Read(path)
 	if err != nil {
-		//Do nothing
+		return Secret{}, err
 	} else {
 		log.Println("Got Lease: " + secret.LeaseID)
 		log.Println("Got Username: " + secret.Data["username"].(string))

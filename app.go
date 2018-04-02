@@ -95,6 +95,7 @@ func init() {
 		log.Fatal("Could not get DB role from config.")
 	}
 
+	log.Println("Starting secret retrieval")
 	//Get our DB secrets
 	secret, err := vault.GetSecret(configurator.Database.Role)
 	if err != nil {
