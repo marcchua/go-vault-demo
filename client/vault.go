@@ -5,8 +5,8 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"strconv"
 	"os"
+	"strconv"
 
 	. "github.com/hashicorp/vault/api"
 )
@@ -72,7 +72,7 @@ func (v *Vault) Init() error {
 		//Delete the JWT from POD
 		err = os.Remove(v.Credential)
 		if err != nil {
-		  log.Println("Unable to remove JWT from disk")
+			log.Println("Unable to remove JWT from disk")
 		} else {
 			log.Println("JWT removed from disk.")
 		}
