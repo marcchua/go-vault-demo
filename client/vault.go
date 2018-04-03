@@ -121,7 +121,7 @@ func (c *Vault) GetSecret(path string) (Secret, error) {
 	}
 	log.Println("Got Lease: " + secret.LeaseID)
 	log.Println("Got Username: " + secret.Data["username"].(string))
-	log.Println("Got Password: " + secret.Data["password"].(string))
+	//log.Println("Got Password: " + secret.Data["password"].(string))
 	return *secret, err
 }
 
