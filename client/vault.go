@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
+	"os"
 
 	. "github.com/hashicorp/vault/api"
 )
@@ -68,6 +69,12 @@ func (v *Vault) Init() error {
 		if err != nil {
 			return errors.New("Unable to parse JWT from file")
 		}
+		//Delete the JWT from POD
+		err = os.Remove(v.Credential)
+		if err != nil {
+		  log.Println("Unable to remove JWT from disk")
+		}
+		log.Println("JWT removed from disk.")
 		//Payload
 		data := map[string]interface{}{"jwt": string(jwt), "role": v.Role}
 		//Auth with K8s vault
