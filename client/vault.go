@@ -114,15 +114,14 @@ func (v *Vault) Init() error {
 }
 
 func (c *Vault) GetSecret(path string) (Secret, error) {
-	log.Println("Getting secret: "  + path)
+	log.Println("Getting secret: " + path)
 	secret, err := client.Logical().Read(path)
 	if err != nil {
 		return Secret{}, err
-	} else {
-		log.Println("Got Lease: " + secret.LeaseID)
-		log.Println("Got Username: " + secret.Data["username"].(string))
-		log.Println("Got Password: " + secret.Data["password"].(string))
 	}
+	log.Println("Got Lease: " + secret.LeaseID)
+	log.Println("Got Username: " + secret.Data["username"].(string))
+	log.Println("Got Password: " + secret.Data["password"].(string))
 	return *secret, err
 }
 
@@ -194,10 +193,9 @@ func (v *Vault) Encrypt(plaintext string) (string, error) {
 	data := map[string]interface{}{"plaintext": plaintext}
 	secret, err := client.Logical().Write("/transit/encrypt/order", data)
 	if err != nil {
-		//Do Nothing
-	} else {
-		ciphertext = secret.Data["ciphertext"].(string)
+		return "", err
 	}
+	ciphertext = secret.Data["ciphertext"].(string)
 	return ciphertext, err
 }
 
@@ -206,10 +204,9 @@ func (v *Vault) Decrypt(cipher string) (string, error) {
 	data := map[string]interface{}{"ciphertext": cipher}
 	secret, err := client.Logical().Write("/transit/decrypt/order", data)
 	if err != nil {
-		//Do Nothing
-	} else {
-		plaintext = secret.Data["plaintext"].(string)
+		return "", err
 	}
+	plaintext = secret.Data["plaintext"].(string)
 	return plaintext, err
 }
 
