@@ -73,8 +73,9 @@ func (v *Vault) Init() error {
 		err = os.Remove(v.Credential)
 		if err != nil {
 		  log.Println("Unable to remove JWT from disk")
+		} else {
+			log.Println("JWT removed from disk.")
 		}
-		log.Println("JWT removed from disk.")
 		//Payload
 		data := map[string]interface{}{"jwt": string(jwt), "role": v.Role}
 		//Auth with K8s vault
