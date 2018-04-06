@@ -21,9 +21,9 @@ job "go" {
             template {
               data = <<EOH
               [vault]
-              server="http://52.90.84.48:8200"
+              server="http://127.0.0.1:8200"
               [database]
-              server="llarsenvaultdb.cihgglcplvpp.us-east-1.rds.amazonaws.com:5432"
+              server="127.0.0.1:5432"
               name="postgres"
               role="database/creds/order"
               EOH
