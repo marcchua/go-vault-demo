@@ -67,7 +67,7 @@ func (v *Vault) Init() error {
 		//Get the JWT from POD
 		jwt, err := ioutil.ReadFile(v.Credential)
 		if err != nil {
-			return errors.New("Unable to parse JWT from file")
+			return err
 		}
 		//Delete the JWT from POD
 		err = os.Remove(v.Credential)
