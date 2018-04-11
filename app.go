@@ -69,38 +69,38 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 }
 
 func init() {
-	log.Println("Starting server initialization")
 	//Get our config from the file
+	log.Println("Starting server initialization")
 	configurator.Read()
-	log.Println("Starting vault initialization")
+
 	//Server params
 	vault.Server = configurator.Vault.Server
 	vault.Authentication = configurator.Vault.Authentication
-	//Auth param
 	vault.Credential = configurator.Vault.Credential
-	//Optional role param for auth
 	vault.Role = configurator.Vault.Role
+
 	//Init it
+	log.Println("Starting vault initialization")
 	err := vault.Init()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Vault initialization complete")
 
-	log.Println("Starting DB initialization")
 	//Make sure we got a DB role
+	log.Println("Starting DB initialization")
 	if len(configurator.Database.Role) > 0 {
 		log.Println("DB role is " + configurator.Database.Role)
 	} else {
 		log.Fatal("Could not get DB role from config.")
 	}
 
+  //Get our DB secrets
 	log.Println("Starting secret retrieval")
-	//Get our DB secrets
 	secret, err := vault.GetSecret(configurator.Database.Role)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	//Start our Goroutine Renewal for the DB creds
 	go vault.RenewSecret(secret)
 
@@ -116,7 +116,6 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("DB initialization complete")
 
 	log.Println("Server initialization complete")
 }
