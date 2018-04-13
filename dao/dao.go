@@ -41,7 +41,6 @@ func (o *OrderDAO) Connect() error {
 func (o *OrderDAO) Close() error {
 	err := db.Close()
 	return err
-
 }
 
 func (o *OrderDAO) FindAll() ([]Order, error) {
