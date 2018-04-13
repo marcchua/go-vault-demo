@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
 
 	. "github.com/hashicorp/vault/api"
 )
@@ -35,6 +34,7 @@ func (v *Vault) Init() error {
 	if err != nil {
 		return err
 	}
+
 	//Auth to Vault
 	log.Println("Client authenticating to Vault")
 	switch v.Authentication {
@@ -100,7 +100,6 @@ func (v *Vault) Init() error {
 	if err != nil {
 		return err
 	}
-	log.Println("Token is valid")
 
 	//Get the creation ttl info so we can log it.
 	ttl = lookup.Data["creation_ttl"].(json.Number).String()
@@ -110,7 +109,6 @@ func (v *Vault) Init() error {
 
 	//Check renewable
 	renew = lookup.Data["renewable"].(bool)
-	log.Println("Token renewable: " + strconv.FormatBool(renew))
 	//If it's not renewable log it
 	if renew == false {
 		log.Println("Token is not renewable. Token lifecycle disabled.")
@@ -118,7 +116,8 @@ func (v *Vault) Init() error {
 		//Start our renewal goroutine
 		go v.RenewToken()
 	}
-	return err
+
+	return nil
 }
 
 func (c *Vault) GetSecret(path string) (Secret, error) {
@@ -130,7 +129,7 @@ func (c *Vault) GetSecret(path string) (Secret, error) {
 	log.Println("Got Lease: " + secret.LeaseID)
 	log.Println("Got Username: " + secret.Data["username"].(string))
 	//log.Println("Got Password: " + secret.Data["password"].(string))
-	return *secret, err
+	return *secret, nil
 }
 
 func (v *Vault) RenewToken() {
@@ -139,20 +138,24 @@ func (v *Vault) RenewToken() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	//Create the object. TODO look at setting increment explicitly
 	renewer, err := client.NewRenewer(&RenewerInput{
 		Secret: secret,
 		//Grace:  time.Duration(15 * time.Second),
 		//Increment: 60,
 	})
+
 	//Check if we were able to create the renewer
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Starting token lifecycle management for accessor " + secret.Auth.Accessor)
+
 	//Start the renewer
+	log.Println("Starting token lifecycle management for accessor " + secret.Auth.Accessor)
 	go renewer.Renew()
 	defer renewer.Stop()
+
 	//Log it
 	for {
 		select {
@@ -173,14 +176,17 @@ func (v *Vault) RenewSecret(secret Secret) error {
 		Secret: &secret,
 		//Grace:  time.Duration(15 * time.Second),
 	})
+
 	//Check if we were able to create the renewer
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Starting secret lifecycle management for lease " + secret.LeaseID)
+
 	//Start the renewer
+	log.Println("Starting secret lifecycle management for lease " + secret.LeaseID)
 	go renewer.Renew()
 	defer renewer.Stop()
+
 	//Log it
 	for {
 		select {
@@ -198,27 +204,30 @@ func (v *Vault) RenewSecret(secret Secret) error {
 
 func (v *Vault) Encrypt(plaintext string) (string, error) {
 	var ciphertext string
+
 	data := map[string]interface{}{"plaintext": plaintext}
 	secret, err := client.Logical().Write("/transit/encrypt/order", data)
 	if err != nil {
 		return "", err
 	}
+
 	ciphertext = secret.Data["ciphertext"].(string)
-	return ciphertext, err
+	return ciphertext, nil
 }
 
 func (v *Vault) Decrypt(cipher string) (string, error) {
 	var plaintext string
+
 	data := map[string]interface{}{"ciphertext": cipher}
 	secret, err := client.Logical().Write("/transit/decrypt/order", data)
 	if err != nil {
 		return "", err
 	}
+
 	plaintext = secret.Data["plaintext"].(string)
-	return plaintext, err
+	return plaintext, nil
 }
 
 func (v *Vault) Close() {
-	log.Println("Revoking " + client.Token())
 	client.Auth().Token().RevokeSelf(client.Token())
 }

@@ -69,8 +69,9 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 }
 
 func init() {
-	//Get our config from the file
 	log.Println("Starting server initialization")
+
+	//Get our config from the file
 	configurator.Read()
 
 	//Server params
@@ -126,7 +127,7 @@ func main() {
 	r.HandleFunc("/api/orders", AllOrdersEndpoint).Methods("GET")
 	r.HandleFunc("/api/orders", CreateOrderEndpoint).Methods("POST")
 	r.HandleFunc("/api/orders", DeleteOrdersEndpoint).Methods("DELETE")
-	log.Println("Server is now accepting requests on port 3000")
+
 	//Catch SIGINT AND SIGTERM to tear down tokens and secrets
 	var gracefulStop = make(chan os.Signal)
 	signal.Notify(gracefulStop, syscall.SIGTERM)
@@ -137,8 +138,12 @@ func main() {
 		vault.Close()
 		os.Exit(0)
 	}()
+
 	//Start server
 	if err := http.ListenAndServe(":3000", r); err != nil {
 		log.Fatal(err)
 	}
+
+	//Notify
+	log.Println("Server is now accepting requests on port 3000")
 }
