@@ -78,6 +78,7 @@ func (o *OrderDAO) DeleteAll() error {
 	if err != nil {
 		return err
 	}
+
 	//Delete the order ids if we have results
 	if len(ids) > 0 {
 		pgids := pg.In(ids)
