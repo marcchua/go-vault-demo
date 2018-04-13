@@ -89,6 +89,7 @@ func (o *OrderDAO) DeleteAll() error {
 	} else {
 		log.Println("No records to delete.")
 	}
+
 	return nil
 }
 
