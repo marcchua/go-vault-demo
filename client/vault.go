@@ -84,7 +84,7 @@ func (v *Vault) Init() error {
 			return err
 		}
 		//Log our metadata
-		log.Println("Got Vault token. Dumping K8s metadata...")
+		log.Println("Dumping K8s metadata...")
 		log.Println(secret.Auth.Metadata)
 		//Get the client token
 		token = secret.Auth.ClientToken
