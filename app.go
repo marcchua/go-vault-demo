@@ -34,8 +34,9 @@ func AllOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateOrderEndpoint(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
 	var order models.Order
+	
+	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
