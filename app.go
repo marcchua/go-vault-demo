@@ -35,7 +35,7 @@ func AllOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func CreateOrderEndpoint(w http.ResponseWriter, r *http.Request) {
 	var order models.Order
-	
+
 	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
@@ -141,10 +141,8 @@ func main() {
 	}()
 
 	//Start server
+	log.Println("Server is now accepting requests on port 3000")
 	if err := http.ListenAndServe(":3000", r); err != nil {
 		log.Fatal(err)
 	}
-
-	//Notify
-	log.Println("Server is now accepting requests on port 3000")
 }
