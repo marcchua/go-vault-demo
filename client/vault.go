@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"os"
 
 	. "github.com/hashicorp/vault/api"
 )
@@ -68,13 +67,6 @@ func (v *Vault) Init() error {
 		jwt, err := ioutil.ReadFile(v.Credential)
 		if err != nil {
 			return err
-		}
-		//Delete the JWT from POD
-		err = os.Remove(v.Credential)
-		if err != nil {
-			log.Println("Unable to remove JWT from disk")
-		} else {
-			log.Println("JWT removed from disk.")
 		}
 		//Payload
 		data := map[string]interface{}{"jwt": string(jwt), "role": v.Role}
