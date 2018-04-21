@@ -108,9 +108,6 @@ func (c *Vault) GetSecret(path string) (Secret, error) {
 	if err != nil {
 		return Secret{}, err
 	}
-	log.Println("Got Lease: " + secret.LeaseID)
-	log.Println("Got Username: " + secret.Data["username"].(string))
-	//log.Println("Got Password: " + secret.Data["password"].(string))
 	return *secret, nil
 }
 

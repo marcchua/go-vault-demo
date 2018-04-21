@@ -104,6 +104,7 @@ func init() {
 	}
 
 	//Start our Goroutine Renewal for the DB creds
+	log.Println("Got DB User: " + secret.Data["username"].(string))
 	go vault.RenewSecret(secret)
 
 	//DAO config
