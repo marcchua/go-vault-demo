@@ -90,13 +90,12 @@ func init() {
 
 	//Make sure we got a DB role
 	log.Println("Starting DB initialization")
-	if len(configurator.Database.Role) > 0 {
-		log.Println("DB role is " + configurator.Database.Role)
-	} else {
-		log.Fatal("Could not get DB role from config.")
-	}
+	if len(configurator.Database.Role) == 0 {
+	        log.Fatal("Could not get DB role from config.")
+	} 
 
 	//Get our DB secrets
+	log.Println("DB role is " + configurator.Database.Role)
 	secret, err := vault.GetSecret(configurator.Database.Role)
 	if err != nil {
 		log.Fatal(err)
