@@ -181,11 +181,11 @@ func (v *Vault) RenewSecret(secret Secret) error {
 	}
 }
 
-func (v *Vault) Encrypt(plaintext string) (string, error) {
+func (v *Vault) Encrypt(path string, plaintext string) (string, error) {
 	var ciphertext string
 
 	data := map[string]interface{}{"plaintext": plaintext}
-	secret, err := client.Logical().Write("/transit/encrypt/order", data)
+	secret, err := client.Logical().Write(path, data)
 	if err != nil {
 		return "", err
 	}
@@ -194,11 +194,11 @@ func (v *Vault) Encrypt(plaintext string) (string, error) {
 	return ciphertext, nil
 }
 
-func (v *Vault) Decrypt(ciphertext string) (string, error) {
+func (v *Vault) Decrypt(path string, ciphertext string) (string, error) {
 	var plaintext string
 
 	data := map[string]interface{}{"ciphertext": ciphertext}
-	secret, err := client.Logical().Write("/transit/decrypt/order", data)
+	secret, err := client.Logical().Write(path, data)
 	if err != nil {
 		return "", err
 	}

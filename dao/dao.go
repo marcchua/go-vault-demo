@@ -55,7 +55,7 @@ func (o *OrderDAO) FindAll() ([]Order, error) {
 
 	//Decrypt these. TODO Could use a batch decyrpt opp here
 	for _, order := range eOrders {
-		dOrder, err := o.Vault.Decrypt(order.CustomerName)
+		dOrder, err := o.Vault.Decrypt("/transit/decrypt/order", order.CustomerName)
 		if err != nil {
 			log.Println("Unable to decrypt order: " + strconv.FormatInt(order.Id, 10))
 		} else {
@@ -100,7 +100,7 @@ func (o *OrderDAO) Insert(order Order) (Order, error) {
 	//Encrypt it
 	encode := base64.StdEncoding.EncodeToString([]byte(order.CustomerName))
 	//Get plaintext customer
-	cipher, err := o.Vault.Encrypt(encode)
+	cipher, err := o.Vault.Encrypt("/transit/encrypt/order", encode)
 	if err != nil {
 		return order, err
 	}
