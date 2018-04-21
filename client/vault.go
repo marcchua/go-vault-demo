@@ -20,8 +20,6 @@ var client *Client
 func (v *Vault) Init() error {
 	var err error
 	var renew bool
-	var ttl string
-	var maxttl string
 	var token string
 
 	//Default client
@@ -91,7 +89,7 @@ func (v *Vault) Init() error {
 	if err != nil {
 		return err
 	}
-	
+
 	//Check renewable
 	renew = lookup.Data["renewable"].(bool)
 	//If it's not renewable log it. If it is start the renewal.
@@ -199,10 +197,10 @@ func (v *Vault) Encrypt(plaintext string) (string, error) {
 	return ciphertext, nil
 }
 
-func (v *Vault) Decrypt(cipher string) (string, error) {
+func (v *Vault) Decrypt(ciphertext string) (string, error) {
 	var plaintext string
 
-	data := map[string]interface{}{"ciphertext": cipher}
+	data := map[string]interface{}{"ciphertext": ciphertext}
 	secret, err := client.Logical().Write("/transit/decrypt/order", data)
 	if err != nil {
 		return "", err
