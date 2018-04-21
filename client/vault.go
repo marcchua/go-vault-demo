@@ -92,20 +92,13 @@ func (v *Vault) Init() error {
 	if err != nil {
 		return err
 	}
-
-	//Get the creation ttl info so we can log it.
-	ttl = lookup.Data["creation_ttl"].(json.Number).String()
-	maxttl = lookup.Data["explicit_max_ttl"].(json.Number).String()
-	log.Println("Token creation TTL: " + string(ttl) + "s")
-	log.Println("Token max TTL: " + string(maxttl) + "s")
-
+	
 	//Check renewable
 	renew = lookup.Data["renewable"].(bool)
-	//If it's not renewable log it
+	//If it's not renewable log it. If it is start the renewal.
 	if renew == false {
 		log.Println("Token is not renewable. Token lifecycle disabled.")
 	} else {
-		//Start our renewal goroutine
 		go v.RenewToken()
 	}
 
