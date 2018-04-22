@@ -85,9 +85,6 @@ func (o *OrderDAO) DeleteAll() error {
 		if err != nil {
 			return err
 		}
-		log.Println("Deleted records", res.RowsAffected())
-	} else {
-		log.Println("No records to delete.")
 	}
 
 	return nil
