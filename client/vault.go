@@ -49,18 +49,16 @@ func (v *Vault) Init() error {
 	case "kubernetes":
 		log.Println("Using kubernetes authentication")
 		//Check Role
-		if len(v.Role) > 0 {
-			log.Println("Role is " + v.Role)
-		} else {
+		if len(v.Role) == 0 {
 			return errors.New("K8s role not in config.")
 		}
 		//Check JWT
-		if len(v.Credential) > 0 {
-			log.Println("Service account JWT file is " + v.Credential)
-		} else {
+		if len(v.Credential) == 0 {
 			return errors.New("K8s JWT file not in config.")
 		}
 		//Get the JWT from POD
+		log.Println("Service account JWT file is " + v.Credential)
+		log.Println("Role is " + v.Role)
 		jwt, err := ioutil.ReadFile(v.Credential)
 		if err != nil {
 			return err
