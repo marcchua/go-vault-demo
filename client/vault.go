@@ -67,9 +67,8 @@ func (v *Vault) Init() error {
 			return err
 		}
 		
-		//Payload
-		data := map[string]interface{}{"jwt": string(jwt), "role": v.Role}
 		//Auth with K8s vault
+		data := map[string]interface{}{"jwt": string(jwt), "role": v.Role}
 		secret, err := client.Logical().Write("auth/kubernetes/login", data)
 		if err != nil {
 			return err
