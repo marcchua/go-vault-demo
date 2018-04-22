@@ -95,7 +95,6 @@ func (v *Vault) Init() error {
 
 	//Check renewable
 	renew = lookup.Data["renewable"].(bool)
-	//If it's not renewable log it. If it is start the renewal.
 	if renew == true {
 		go v.RenewToken()
 	} 
