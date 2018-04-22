@@ -40,8 +40,8 @@ func (v *Vault) Init() error {
 			log.Println("Got token from VAULT_TOKEN")
 			break
 		} else if len(v.Credential) > 0 {
-			token = v.Credential
 			log.Println("Got token from config file")
+			token = v.Credential
 		} else {
 			log.Fatal("Could not get Vault token. Terminating.")
 		}
