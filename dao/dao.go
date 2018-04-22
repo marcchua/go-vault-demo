@@ -70,7 +70,6 @@ func (o *OrderDAO) FindAll() ([]Order, error) {
 
 func (o *OrderDAO) DeleteAll() error {
 	var ids []int
-	var res orm.Result
 
 	//Find the order ids
 	err := db.Model(&Order{}).Column("id").Select(&ids)
