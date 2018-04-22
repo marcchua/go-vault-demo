@@ -91,11 +91,9 @@ func (v *Vault) Init() error {
 	//Check renewable
 	renew = lookup.Data["renewable"].(bool)
 	//If it's not renewable log it. If it is start the renewal.
-	if renew == false {
-		log.Println("Token is not renewable. Token lifecycle disabled.")
-	} else {
+	if renew == true {
 		go v.RenewToken()
-	}
+	} 
 
 	return nil
 }
