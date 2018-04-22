@@ -48,14 +48,17 @@ func (v *Vault) Init() error {
 		client.SetToken(token)
 	case "kubernetes":
 		log.Println("Using kubernetes authentication")
+		
 		//Check Role
 		if len(v.Role) == 0 {
 			return errors.New("K8s role not in config.")
 		}
+		
 		//Check JWT
 		if len(v.Credential) == 0 {
 			return errors.New("K8s JWT file not in config.")
 		}
+		
 		//Get the JWT from POD
 		log.Println("Service account JWT file is " + v.Credential)
 		log.Println("Role is " + v.Role)
@@ -63,6 +66,7 @@ func (v *Vault) Init() error {
 		if err != nil {
 			return err
 		}
+		
 		//Payload
 		data := map[string]interface{}{"jwt": string(jwt), "role": v.Role}
 		//Auth with K8s vault
@@ -70,8 +74,10 @@ func (v *Vault) Init() error {
 		if err != nil {
 			return err
 		}
+		
 		//Log our metadata
 		log.Println(secret.Auth.Metadata)
+		
 		//Get the client token
 		token = secret.Auth.ClientToken
 		client.SetToken(token)
