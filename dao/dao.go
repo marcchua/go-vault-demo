@@ -80,7 +80,7 @@ func (o *OrderDAO) DeleteAll() error {
 	//Delete the order ids if we have results
 	if len(ids) > 0 {
 		pgids := pg.In(ids)
-		res, err = db.Model(&Order{}).Where("id IN (?)", pgids).Delete()
+		res, err := db.Model(&Order{}).Where("id IN (?)", pgids).Delete()
 		if err != nil {
 			return err
 		}
