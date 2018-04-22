@@ -137,7 +137,7 @@ func (v *Vault) RenewToken() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			//App will terminate after token cannot be renewed. TODO: Get the remaining token duration and schedule shutdown.
+			//App will terminate after token cannot be renewed.
 			log.Fatal("Cannot renew token with accessor " + secret.Auth.Accessor + ". App will terminate.")
 		case renewal := <-renewer.RenewCh():
 			log.Printf("Successfully renewed token accessor " + renewal.Secret.Auth.Accessor + " at: " + renewal.RenewedAt.String())
