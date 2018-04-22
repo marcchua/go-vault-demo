@@ -102,7 +102,7 @@ func (v *Vault) Init() error {
 	return nil
 }
 
-func (c *Vault) GetSecret(path string) (Secret, error) {
+func (v *Vault) GetSecret(path string) (Secret, error) {
 	log.Println("Getting secret: " + path)
 	secret, err := client.Logical().Read(path)
 	if err != nil {
