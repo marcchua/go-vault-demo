@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/go-pg/pg"
-	"github.com/go-pg/pg/orm"
 	. "github.com/lanceplarsen/go-vault-demo/client"
 	. "github.com/lanceplarsen/go-vault-demo/models"
 )
