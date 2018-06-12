@@ -89,6 +89,9 @@ func (o *OrderDAO) DeleteAll() error {
 }
 
 func (o *OrderDAO) Insert(order Order) (Order, error) {
+	//Get the unencrypted customer to send back to the API
+	ucust := order.CustomerName
+
 	//Add a timestamp
 	order.OrderDate = time.Now()
 
@@ -106,6 +109,9 @@ func (o *OrderDAO) Insert(order Order) (Order, error) {
 	if err != nil {
 		return order, err
 	}
+
+	//If the order was inserted successfully send back the unencrypted customer
+	order.CustomerName = ucust
 
 	return order, nil
 }
