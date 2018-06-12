@@ -76,7 +76,9 @@ func init() {
 	configurator.Read()
 
 	//Server params
-	vault.Server = configurator.Vault.Server
+	vault.Host = configurator.Vault.Host
+	vault.Port = configurator.Vault.Port
+	vault.Scheme = configurator.Vault.Scheme
 	vault.Authentication = configurator.Vault.Authentication
 	vault.Credential = configurator.Vault.Credential
 	vault.Role = configurator.Vault.Role
@@ -91,18 +93,19 @@ func init() {
 	//Make sure we got a DB role
 	log.Println("Starting DB initialization")
 	if len(configurator.Database.Role) == 0 {
-	        log.Fatal("Could not get DB role from config.")
-	} 
+		log.Fatal("Could not get DB role from config.")
+	}
 
 	//Get our DB secrets
-	log.Println("DB role is " + configurator.Database.Role)
+	log.Printf("DB role: %s", configurator.Database.Role)
 	secret, err := vault.GetSecret(configurator.Database.Role)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	//Start our Goroutine Renewal for the DB creds
-	log.Println("Got DB User: " + secret.Data["username"].(string))
+	log.Printf("DB User: %s", secret.Data["username"].(string))
+	//log.Println("DB Password: " + secret.Data["password"].(string))
 	go vault.RenewSecret(secret)
 
 	//DAO config
@@ -118,7 +121,6 @@ func init() {
 		log.Fatal(err)
 	}
 
-	log.Println("Server initialization complete")
 }
 
 func main() {

@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -9,7 +10,9 @@ import (
 )
 
 type Vault struct {
-	Server         string
+	Host           string
+	Port           string
+	Scheme         string
 	Authentication string
 	Credential     string
 	Role           string
@@ -26,7 +29,7 @@ func (v *Vault) Init() error {
 	config := DefaultConfig()
 	client, err = NewClient(config)
 	//Set the address
-	err = client.SetAddress(v.Server)
+	err = client.SetAddress(fmt.Sprintf("%s://%s:%s", v.Scheme, v.Host, v.Port))
 	if err != nil {
 		return err
 	}
@@ -43,45 +46,45 @@ func (v *Vault) Init() error {
 			log.Println("Got token from config file")
 			token = v.Credential
 		} else {
-			log.Fatal("Could not get Vault token. Terminating.")
+			log.Fatal("Could not get Vault token.")
 		}
 		client.SetToken(token)
 	case "kubernetes":
 		log.Println("Using kubernetes authentication")
-		
+
 		//Check Role
 		if len(v.Role) == 0 {
 			return errors.New("K8s role not in config.")
 		}
-		
+
 		//Check JWT
 		if len(v.Credential) == 0 {
 			return errors.New("K8s JWT file not in config.")
 		}
-		
+
 		//Get the JWT from POD
-		log.Println("Service account JWT file is " + v.Credential)
-		log.Println("Role is " + v.Role)
+		log.Printf("JWT file: %s", v.Credential)
+		log.Printf("Role: %s", v.Role)
 		jwt, err := ioutil.ReadFile(v.Credential)
 		if err != nil {
 			return err
 		}
-		
+
 		//Auth with K8s vault
 		data := map[string]interface{}{"jwt": string(jwt), "role": v.Role}
 		secret, err := client.Logical().Write("auth/kubernetes/login", data)
 		if err != nil {
 			return err
 		}
-		
+
 		//Log our metadata
-		log.Println(secret.Auth.Metadata)
-		
+		log.Printf("Metadata: %v", secret.Auth.Metadata)
+
 		//Get the client token
 		token = secret.Auth.ClientToken
 		client.SetToken(token)
 	default:
-		log.Fatal("Auth method " + v.Authentication + " is not supported")
+		log.Fatalf("Auth method %s is not supported", v.Authentication)
 	}
 
 	//See if the token we got is renewable
@@ -96,13 +99,13 @@ func (v *Vault) Init() error {
 	renew = lookup.Data["renewable"].(bool)
 	if renew == true {
 		go v.RenewToken()
-	} 
+	}
 
 	return nil
 }
 
 func (v *Vault) GetSecret(path string) (Secret, error) {
-	log.Println("Getting secret: " + path)
+	log.Printf("Getting secret: %s", path)
 	secret, err := client.Logical().Read(path)
 	if err != nil {
 		return Secret{}, err
@@ -130,7 +133,7 @@ func (v *Vault) RenewToken() {
 	}
 
 	//Start the renewer
-	log.Println("Starting token lifecycle management for accessor " + secret.Auth.Accessor)
+	log.Printf("Starting token lifecycle management for accessor: %s", secret.Auth.Accessor)
 	go renewer.Renew()
 	defer renewer.Stop()
 
@@ -142,9 +145,9 @@ func (v *Vault) RenewToken() {
 				log.Fatal(err)
 			}
 			//App will terminate after token cannot be renewed.
-			log.Fatal("Cannot renew token with accessor " + secret.Auth.Accessor + ". App will terminate.")
+			log.Fatalf("Cannot renew token with accessor %s. App will terminate.", secret.Auth.Accessor)
 		case renewal := <-renewer.RenewCh():
-			log.Printf("Successfully renewed token accessor " + renewal.Secret.Auth.Accessor + " at: " + renewal.RenewedAt.String())
+			log.Printf("Successfully renewed token accessor: %s", renewal.Secret.Auth.Accessor)
 		}
 	}
 }
@@ -161,7 +164,7 @@ func (v *Vault) RenewSecret(secret Secret) error {
 	}
 
 	//Start the renewer
-	log.Println("Starting secret lifecycle management for lease " + secret.LeaseID)
+	log.Printf("Starting secret lifecycle management for lease: %s", secret.LeaseID)
 	go renewer.Renew()
 	defer renewer.Stop()
 
@@ -173,9 +176,9 @@ func (v *Vault) RenewSecret(secret Secret) error {
 				log.Fatal(err)
 			}
 			//Renewal is now past max TTL. Let app die reschedule it elsewhere. TODO: Allow for getting new creds here.
-			log.Fatal("Cannot renew " + secret.LeaseID + ". App will terminate.")
+			log.Fatalf("Cannot renew %s. App will terminate.", secret.LeaseID)
 		case renewal := <-renewer.RenewCh():
-			log.Printf("Successfully renewed secret lease " + renewal.Secret.LeaseID + " at: " + renewal.RenewedAt.String())
+			log.Printf("Successfully renewed secret lease: %s", renewal.Secret.LeaseID)
 		}
 	}
 }

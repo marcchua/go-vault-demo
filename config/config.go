@@ -18,7 +18,9 @@ type Database struct {
 }
 
 type Vault struct {
-	Server         string
+	Host           string
+	Port           string
+	Scheme         string
 	Authentication string
 	Credential     string
 	Role           string
@@ -28,7 +30,9 @@ func (c *Config) Read() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	//Vault Defaults
-	viper.SetDefault("Vault.Server", "http://127.0.0.1:8200")
+	viper.SetDefault("Vault.Host", "127.0.0.1")
+	viper.SetDefault("Vault.Port", "8200")
+	viper.SetDefault("Vault.Scheme", "http")
 	viper.SetDefault("Vault.Authentication", "token")
 	//DB Defaults
 	viper.SetDefault("Database.Server", "localhost:5432")

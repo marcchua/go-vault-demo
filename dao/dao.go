@@ -56,7 +56,7 @@ func (o *OrderDAO) FindAll() ([]Order, error) {
 	for _, order := range eOrders {
 		dOrder, err := o.Vault.Decrypt("/transit/decrypt/order", order.CustomerName)
 		if err != nil {
-			log.Println("Unable to decrypt order: " + strconv.FormatInt(order.Id, 10))
+			log.Printf("Unable to decrypt order: %v", strconv.FormatInt(order.Id, 10))
 		} else {
 			sDec, _ := base64.StdEncoding.DecodeString(dOrder)
 			order.CustomerName = string(sDec)
