@@ -1,11 +1,15 @@
 package client
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	. "github.com/hashicorp/vault/api"
 )
 
@@ -81,6 +85,56 @@ func (v *Vault) Init() error {
 		log.Printf("Metadata: %v", secret.Auth.Metadata)
 
 		//Get the client token
+		token = secret.Auth.ClientToken
+		client.SetToken(token)
+	case "aws":
+		log.Println("Using AWS authentication")
+
+		//Check Role
+		if len(v.Role) == 0 {
+			return errors.New("AWS role not in config.")
+		}
+		log.Printf("Role: %s", v.Role)
+
+		//Get a session
+		loginData := make(map[string]interface{})
+		stsSession := session.Must(session.NewSession())
+
+		//Sign the STS request
+		var params *sts.GetCallerIdentityInput
+		svc := sts.New(stsSession)
+		stsRequest, _ := svc.GetCallerIdentityRequest(params)
+		stsRequest.Sign()
+
+		//Get headers
+		headersJson, err := json.Marshal(stsRequest.HTTPRequest.Header)
+		if err != nil {
+			log.Fatal(err)
+		}
+		requestBody, err := ioutil.ReadAll(stsRequest.HTTPRequest.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		//Construct payload
+		loginData["iam_http_request_method"] = stsRequest.HTTPRequest.Method
+		loginData["iam_request_url"] = base64.StdEncoding.EncodeToString([]byte(stsRequest.HTTPRequest.URL.String()))
+		loginData["iam_request_headers"] = base64.StdEncoding.EncodeToString(headersJson)
+		loginData["iam_request_body"] = base64.StdEncoding.EncodeToString(requestBody)
+		loginData["role"] = v.Role
+
+		//Login
+		path := "auth/aws/login"
+		secret, err := client.Logical().Write(path, loginData)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if secret == nil {
+			log.Fatal("empty response from credential provider")
+		}
+
+		//Set client token
+		log.Printf("Metadata: %v", secret.Auth.Metadata)
 		token = secret.Auth.ClientToken
 		client.SetToken(token)
 	default:
