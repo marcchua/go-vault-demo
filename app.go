@@ -98,7 +98,7 @@ func init() {
 
 	//Get our DB secrets
 	log.Printf("DB role: %s", configurator.Database.Role)
-	secret, err := vault.GetSecret(configurator.Database.Role)
+	secret, err := vault.GetSecret(fmt.Sprintf("%s/creds/%s", configurator.Database.Mount, configurator.Database.Role))
 	if err != nil {
 		log.Fatal(err)
 	}
