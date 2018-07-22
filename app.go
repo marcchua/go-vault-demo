@@ -110,7 +110,8 @@ func init() {
 
 	//DAO config
 	dao.Vault = &vault
-	dao.Url = configurator.Database.Server
+	dao.Host = configurator.Database.Host
+	dao.Port = configurator.Database.Port
 	dao.Database = configurator.Database.Name
 	dao.User = secret.Data["username"].(string)
 	dao.Password = secret.Data["password"].(string)

@@ -7,10 +7,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	. "github.com/hashicorp/vault/api"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/iam/v1"
 )
 
 type Vault struct {
@@ -81,13 +87,13 @@ func (v *Vault) Init() error {
 			return err
 		}
 
-		//Log our metadata
+		//Set client token
 		log.Printf("Metadata: %v", secret.Auth.Metadata)
-
-		//Get the client token
 		token = secret.Auth.ClientToken
 		client.SetToken(token)
 	case "aws":
+		var svc *sts.STS
+
 		log.Println("Using AWS authentication")
 
 		//Check Role
@@ -100,9 +106,17 @@ func (v *Vault) Init() error {
 		loginData := make(map[string]interface{})
 		stsSession := session.Must(session.NewSession())
 
+		//If we have a creds/sa var we will try to assume it.
+		//If not we will create an STS session with our default creds.
+		if len(v.Credential) > 0 {
+			creds := stscreds.NewCredentials(stsSession, v.Credential)
+			svc = sts.New(stsSession, &aws.Config{Credentials: creds})
+		} else {
+			svc = sts.New(stsSession)
+		}
+
 		//Sign the STS request
 		var params *sts.GetCallerIdentityInput
-		svc := sts.New(stsSession)
 		stsRequest, _ := svc.GetCallerIdentityRequest(params)
 		stsRequest.Sign()
 
@@ -131,6 +145,67 @@ func (v *Vault) Init() error {
 		}
 		if secret == nil {
 			log.Fatal("empty response from credential provider")
+		}
+
+		//Set client token
+		log.Printf("Metadata: %v", secret.Auth.Metadata)
+		token = secret.Auth.ClientToken
+		client.SetToken(token)
+	case "gcp":
+		log.Println("Using GCP authentication")
+
+		//Check Role
+		if len(v.Role) == 0 {
+			return errors.New("GCP role not in config.")
+		}
+		log.Printf("Role: %s", v.Role)
+
+		//Check SA
+		if len(v.Credential) == 0 {
+			return errors.New("GCP SA not in config.")
+		}
+		log.Printf("SA: %s", v.Credential)
+
+		//Set up client
+		ctx := context.Background()
+
+		//Client and service
+		oauthClient, err := google.DefaultClient(ctx, iam.CloudPlatformScope)
+		iamService, err := iam.New(oauthClient)
+
+		//Sign JWT
+		serviceAccount := v.Credential
+		resourceName := fmt.Sprintf("projects/%s/serviceAccounts/%s", "-", serviceAccount)
+		jwtPayload := map[string]interface{}{
+			"aud": fmt.Sprintf("vault/%s", v.Role),
+			"sub": serviceAccount,
+			"exp": time.Now().Add(time.Minute * 10).Unix(),
+		}
+
+		//Payload
+		payloadBytes, err := json.Marshal(jwtPayload)
+		if err != nil {
+			log.Fatal(err)
+		}
+		signJwtReq := &iam.SignJwtRequest{
+			Payload: string(payloadBytes),
+		}
+
+		//Response
+		resp, err := iamService.Projects.ServiceAccounts.SignJwt(resourceName, signJwtReq).Do()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		//Login
+		secret, err := client.Logical().Write(
+			"auth/gcp/login",
+			map[string]interface{}{
+				"role": v.Role,
+				"jwt":  resp.SignedJwt,
+			})
+		if err != nil {
+			log.Fatal(err)
 		}
 
 		//Set client token

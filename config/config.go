@@ -12,9 +12,10 @@ type Config struct {
 }
 
 type Database struct {
-	Server string
-	Name   string
-	Role   string
+	Host string
+	Port string
+	Name string
+	Role string
 }
 
 type Vault struct {
@@ -35,7 +36,8 @@ func (c *Config) Read() {
 	viper.SetDefault("Vault.Scheme", "http")
 	viper.SetDefault("Vault.Authentication", "token")
 	//DB Defaults
-	viper.SetDefault("Database.Server", "localhost:5432")
+	viper.SetDefault("Database.Host", "localhost")
+	viper.SetDefault("Database.Port", "5432")
 	viper.SetDefault("Database.Name", "postgres")
 	//Read it
 	if err := viper.ReadInConfig(); err != nil {

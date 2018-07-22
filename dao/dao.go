@@ -2,6 +2,7 @@ package dao
 
 import (
 	"encoding/base64"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -12,7 +13,8 @@ import (
 )
 
 type OrderDAO struct {
-	Url      string
+	Host     string
+	Port     string
 	Database string
 	User     string
 	Password string
@@ -28,7 +30,7 @@ func (o *OrderDAO) Connect() error {
 	db = pg.Connect(&pg.Options{
 		User:     o.User,
 		Password: o.Password,
-		Addr:     o.Url,
+		Addr:     fmt.Sprintf("%s:%s", o.Host, o.Port),
 		Database: o.Database,
 	})
 
