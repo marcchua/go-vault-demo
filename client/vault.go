@@ -115,6 +115,11 @@ func (v *Vault) Init() error {
 		}
 		log.Printf("Role: %s", v.Role)
 
+		//Check SA
+		if len(v.Credential) > 0 {
+			log.Printf("SA: %s", v.Credential)
+		}
+
 		//Get a session
 		loginData := make(map[string]interface{})
 		stsSession := session.Must(session.NewSession())
