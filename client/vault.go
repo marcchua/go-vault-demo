@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	. "github.com/hashicorp/vault/api"
@@ -98,10 +101,10 @@ func (v *Vault) Init() error {
 		log.Printf("Metadata: %v", secret.Auth.Metadata)
 		token = secret.Auth.ClientToken
 		client.SetToken(token)
-	case "aws":
+	case "aws-iam":
 		var svc *sts.STS
 
-		log.Println("Using AWS authentication")
+		log.Println("Using AWS IAM authentication")
 
 		//Check Mount
 		if len(v.Mount) == 0 {
@@ -159,6 +162,42 @@ func (v *Vault) Init() error {
 		}
 		if secret == nil {
 			log.Fatal("empty response from credential provider")
+		}
+
+		//Set client token
+		log.Printf("Metadata: %v", secret.Auth.Metadata)
+		token = secret.Auth.ClientToken
+		client.SetToken(token)
+	case "aws-ec2":
+		log.Println("Using AWS EC2 authentication")
+
+		//Check Mount
+		if len(v.Mount) == 0 {
+			return errors.New("Auth mount not in config.")
+		}
+		log.Printf("Mount: auth/%s", v.Mount)
+
+		//Check the metadata service is available
+		ec2Session := session.Must(session.NewSession())
+		svc := ec2metadata.New(ec2Session)
+		if !svc.Available() {
+			log.Fatal("Metadata service not available")
+		}
+
+		//Get PKCS7 signed
+		response, err := http.Get("http://169.254.169.254/latest/dynamic/instance-identity/pkcs7")
+		body, err := ioutil.ReadAll(response.Body)
+		pkcs7 := strings.TrimSpace(string(body))
+
+		//Login
+		secret, err := client.Logical().Write(
+			fmt.Sprintf("auth/%s/login", v.Mount),
+			map[string]interface{}{
+				"role":  v.Role,
+				"pkcs7": pkcs7,
+			})
+		if err != nil {
+			log.Fatal(err)
 		}
 
 		//Set client token
