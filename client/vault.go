@@ -26,6 +26,7 @@ type Vault struct {
 	Authentication string
 	Credential     string
 	Role           string
+	Mount          string
 }
 
 var client *Client
@@ -62,19 +63,25 @@ func (v *Vault) Init() error {
 	case "kubernetes":
 		log.Println("Using kubernetes authentication")
 
+		//Check Mount
+		if len(v.Mount) == 0 {
+			return errors.New("Auth mount not in config.")
+		}
+		log.Printf("Mount: auth/%s", v.Mount)
+
 		//Check Role
 		if len(v.Role) == 0 {
 			return errors.New("K8s role not in config.")
 		}
+		log.Printf("Role: %s", v.Role)
 
-		//Check JWT
+		//Check SA
 		if len(v.Credential) == 0 {
-			return errors.New("K8s JWT file not in config.")
+			return errors.New("K8s SA file not in config.")
 		}
+		log.Printf("SA: %s", v.Credential)
 
 		//Get the JWT from POD
-		log.Printf("JWT file: %s", v.Credential)
-		log.Printf("Role: %s", v.Role)
 		jwt, err := ioutil.ReadFile(v.Credential)
 		if err != nil {
 			return err
@@ -82,7 +89,7 @@ func (v *Vault) Init() error {
 
 		//Auth with K8s vault
 		data := map[string]interface{}{"jwt": string(jwt), "role": v.Role}
-		secret, err := client.Logical().Write("auth/kubernetes/login", data)
+		secret, err := client.Logical().Write(fmt.Sprintf("auth/%s/login", v.Mount), data)
 		if err != nil {
 			return err
 		}
@@ -95,6 +102,12 @@ func (v *Vault) Init() error {
 		var svc *sts.STS
 
 		log.Println("Using AWS authentication")
+
+		//Check Mount
+		if len(v.Mount) == 0 {
+			return errors.New("Auth mount not in config.")
+		}
+		log.Printf("Mount: auth/%s", v.Mount)
 
 		//Check Role
 		if len(v.Role) == 0 {
@@ -138,7 +151,7 @@ func (v *Vault) Init() error {
 		loginData["role"] = v.Role
 
 		//Login
-		path := "auth/aws/login"
+		path := fmt.Sprintf("auth/%s/login", v.Mount)
 		secret, err := client.Logical().Write(path, loginData)
 		if err != nil {
 			log.Fatal(err)
@@ -153,6 +166,12 @@ func (v *Vault) Init() error {
 		client.SetToken(token)
 	case "gcp":
 		log.Println("Using GCP authentication")
+
+		//Check Mount
+		if len(v.Mount) == 0 {
+			return errors.New("Auth mount not in config.")
+		}
+		log.Printf("Mount: auth/%s", v.Mount)
 
 		//Check Role
 		if len(v.Role) == 0 {
@@ -199,7 +218,7 @@ func (v *Vault) Init() error {
 
 		//Login
 		secret, err := client.Logical().Write(
-			"auth/gcp/login",
+			fmt.Sprintf("auth/%s/login", v.Mount),
 			map[string]interface{}{
 				"role": v.Role,
 				"jwt":  resp.SignedJwt,

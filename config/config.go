@@ -26,6 +26,7 @@ type Vault struct {
 	Authentication string
 	Credential     string
 	Role           string
+	Mount          string
 }
 
 func (c *Config) Read() {

@@ -82,6 +82,7 @@ func init() {
 	vault.Authentication = configurator.Vault.Authentication
 	vault.Credential = configurator.Vault.Credential
 	vault.Role = configurator.Vault.Role
+	vault.Mount = configurator.Vault.Mount
 
 	//Init it
 	log.Println("Starting vault initialization")
