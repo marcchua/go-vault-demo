@@ -8,9 +8,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	neturl "net/url"
 	"strings"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -204,8 +206,8 @@ func (v *Vault) Init() error {
 		log.Printf("Metadata: %v", secret.Auth.Metadata)
 		token = secret.Auth.ClientToken
 		client.SetToken(token)
-	case "gcp":
-		log.Println("Using GCP authentication")
+	case "gcp-iam":
+		log.Println("Using GCP IAM authentication")
 
 		//Check Mount
 		if len(v.Mount) == 0 {
@@ -262,6 +264,69 @@ func (v *Vault) Init() error {
 			map[string]interface{}{
 				"role": v.Role,
 				"jwt":  resp.SignedJwt,
+			})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		//Set client token
+		log.Printf("Metadata: %v", secret.Auth.Metadata)
+		token = secret.Auth.ClientToken
+		client.SetToken(token)
+	case "gcp-gce":
+		var url string
+
+		log.Println("Using GCP GCE authentication")
+
+		//Check Mount
+		if len(v.Mount) == 0 {
+			return errors.New("Auth mount not in config.")
+		}
+		log.Printf("Mount: auth/%s", v.Mount)
+
+		//Check metadata service is available
+		if !metadata.OnGCE() {
+			log.Fatal("Metadata service not available")
+		}
+
+		//If we are using the non default service account allow us to pass in the correct url
+		if len(v.Credential) > 0 {
+			url = fmt.Sprintf("http://metadata/computeMetadata/v1/instance/service-accounts/%s/login", v.Credential)
+		} else {
+			url = "http://metadata/computeMetadata/v1/instance/service-accounts/default/identity"
+		}
+
+		//Build request
+		c := &http.Client{}
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		//Add headers and query string
+		req.Header.Add("Metadata-Flavor", "Google")
+		q := neturl.Values{}
+		q.Add("audience", fmt.Sprintf("%s/vault/%s", client.Address(), v.Role))
+		q.Add("format", "full")
+		req.URL.RawQuery = q.Encode()
+		resp, err := c.Do(req)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		//Get response jwt
+		body, err := ioutil.ReadAll(resp.Body)
+		jwt := string(body)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		//Login
+		secret, err := client.Logical().Write(
+			fmt.Sprintf("auth/%s/login", v.Mount),
+			map[string]interface{}{
+				"role": v.Role,
+				"jwt":  jwt,
 			})
 		if err != nil {
 			log.Fatal(err)
