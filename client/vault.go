@@ -162,6 +162,8 @@ func (v *Vault) Init() error {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		//Do we need this?
 		if secret == nil {
 			log.Fatal("empty response from credential provider")
 		}

@@ -1,0 +1,14 @@
+[Unit]
+Description=go
+After=syslog.target
+
+[Service]
+User=root
+Restart=always
+RestartSec=10s
+WorkingDirectory=/app
+ExecStart=/app/go-vault-demo
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
