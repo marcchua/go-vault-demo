@@ -1,3 +1,4 @@
-terraform.tf*
+terraform.tfvars
+terraform.tfstate*
 .terraform*
 go-vault-demo

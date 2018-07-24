@@ -43,7 +43,8 @@ authentication="gcp-iam"
 role="order"
 credential="${google_service_account.order.email}"
 EOF
-sudo service go restart
+systemctl enable go.service
+service go restart
 SCRIPT
 
 }
@@ -95,7 +96,8 @@ scheme="${var.vault_scheme}"
 authentication="gcp-gce"
 role="order"
 EOF
-sudo service go restart
+systemctl enable go.service
+service go restart
 SCRIPT
 
 }

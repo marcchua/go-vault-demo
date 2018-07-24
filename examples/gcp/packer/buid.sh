@@ -14,13 +14,6 @@ else
   export PACKER_ENVIRONMENT="${PACKER_ENVIRONMENT}"
 fi
 
-if [ -z ${GCP_ACCOUNT_FILE_JSON} ]; then
-  read -p $'\033[1;32mPlease enter an GCP account file for Packer: \033[0m' GCP_ACCOUNT_FILE_JSON
-  export GCP_ACCOUNT_FILE_JSON="${GCP_ACCOUNT_FILE_JSON}"
-else
-  export GCP_ACCOUNT_FILE_JSON="${GCP_ACCOUNT_FILE_JSON}"
-fi
-
 if [ -z ${GCP_PROJECT_ID} ]; then
   read -p $'\033[1;32mPlease enter a GCP project for Packer: \033[0m' GCP_PROJECT_ID
   export GCP_PROJECT_ID="${GCP_PROJECT_ID}"
