@@ -7,8 +7,8 @@ Go example for multi-cloud auth, dynamic secrets, and encryption with HashiCorp 
 ## Demo Instruction
 
 This repository provides example deployments on various platforms:
-
 - [GCP](examples/gcp)
+- [AWS](examples/aws)
 <br>
 
 ### Setup
