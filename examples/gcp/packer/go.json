@@ -1,0 +1,45 @@
+{
+   "variables": {
+     "gcp_zone": "{{ env `GCP_ZONE` }}",
+     "gcp_project_id": "{{ env `GCP_PROJECT_ID` }}",
+     "environment": "{{ env `PACKER_ENVIRONMENT` }}"
+   },
+   "builders": [
+       {
+         "type": "googlecompute",
+         "image_name": "{{ (user `environment`) | clean_image_name }}-vault-go-demo",
+         "project_id": "{{user `gcp_project_id`}}",
+         "source_image_family": "ubuntu-1604-lts",
+         "ssh_username": "gcp-user",
+         "zone": "{{user `gcp_zone`}}"
+       }
+     ],
+   "provisioners": [
+     {
+        "type": "file",
+        "source": "../../../config.toml",
+        "destination": "/tmp/config.toml"
+     },
+     {
+        "type": "file",
+        "source": "../../../go.service",
+        "destination": "/tmp/go.service"
+     },
+      {
+         "type": "file",
+         "source": "go-vault-demo",
+         "destination": "/tmp/go-vault-demo"
+      },
+      {
+         "type": "shell",
+         "inline": [
+            "sleep 30",
+            "sudo apt-get update",
+            "sudo mkdir -p /app",
+            "sudo mv /tmp/go-vault-demo /app/go-vault-demo",
+            "sudo mv /tmp/config.toml /app/config.toml",
+            "sudo mv /tmp/go.service /etc/systemd/system/go.service"
+         ]
+      }
+   ]
+}

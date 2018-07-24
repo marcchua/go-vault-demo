@@ -1,0 +1,14 @@
+[database]
+host="localhost"
+port="5432"
+name="postgres"
+mount="database"
+role="order"
+[vault]
+host="localhost"
+mount="gcp-iam"
+port="8200"
+scheme="http"
+authentication="gcp-iam"
+role="order"
+credential="sa@project.iam.gserviceaccount.com"
