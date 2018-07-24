@@ -1,0 +1,25 @@
+variable "gcp_project_id" {}
+variable "gcp_region" {}
+variable "gcp_zone" {}
+variable "gcp_image" {}
+variable "gcp_instances" {
+  default = "1"
+}
+
+variable "vault_host" {}
+variable "vault_port" {}
+variable "vault_scheme" {}
+
+variable "postgres_host" {}
+variable "postgres_port" {
+  default = "5432"
+}
+variable "postgres_database" {
+  default = "postgres"
+}
+variable "postgres_role" {
+  default = "order"
+}
+variable "postgres_mount" {
+  default = "database"
+}
