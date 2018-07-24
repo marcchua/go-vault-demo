@@ -21,10 +21,6 @@ resource "google_compute_instance_template" "iam_instance_template" {
     create_before_destroy = true
   }
 
-  metadata {
-    owner = "lance@hashicorp.com"
-  }
-
   service_account {
     email  = "${google_service_account.go.email}"
     scopes = ["cloud-platform"]
@@ -77,10 +73,6 @@ resource "google_compute_instance_template" "gce_instance_template" {
 
   lifecycle {
     create_before_destroy = true
-  }
-
-  metadata {
-    owner = "lance@hashicorp.com"
   }
 
   service_account {
