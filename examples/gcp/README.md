@@ -1,6 +1,6 @@
 # go-vault-demo-gcp
 
-This folder will help you deploy on GCP.
+This folder will help you deploy on GCP using the [GCE](https://www.vaultproject.io/docs/auth/gcp.html#gce) and [IAM](https://www.vaultproject.io/docs/auth/gcp.html#iam) auth methods.
 
 ### Setup
 
