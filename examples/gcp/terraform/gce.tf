@@ -32,8 +32,8 @@ cat << EOF > /app/config.toml
 host="${var.postgres_host}"
 port="${var.postgres_port}"
 name="${var.postgres_database}"
-mount=database
-role=order
+mount="database"
+role="order"
 [vault]
 host="${var.vault_host}"
 mount="gcp-iam"
@@ -86,8 +86,8 @@ cat << EOF > /app/config.toml
 host="${var.postgres_host}"
 port="${var.postgres_port}"
 name="${var.postgres_database}"
-mount=database
-role=order
+mount="database"
+role="order"
 [vault]
 host="${var.vault_host}"
 mount="gcp-gce"
