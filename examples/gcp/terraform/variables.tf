@@ -17,9 +17,3 @@ variable "postgres_port" {
 variable "postgres_database" {
   default = "postgres"
 }
-variable "postgres_role" {
-  default = "order"
-}
-variable "postgres_mount" {
-  default = "database"
-}
