@@ -1,0 +1,54 @@
+{
+   "variables": {
+      "aws_access_key_id": "{{ env `AWS_ACCESS_KEY_ID` }}",
+      "aws_secret_access_key": "{{ env `AWS_SECRET_ACCESS_KEY` }}",
+      "environment": "{{ env `PACKER_ENVIRONMENT` }}"
+   },
+   "builders": [
+      {
+         "type": "amazon-ebs",
+         "access_key": "{{user `aws_access_key`}}",
+         "secret_key": "{{user `aws_secret_key`}}",
+         "region": "us-east-1",
+         "source_ami_filter": {
+            "filters": {
+               "virtualization-type": "hvm",
+               "name": "ubuntu/images/*ubuntu-xenial-16.04-amd64-server-*",
+               "root-device-type": "ebs"
+            },
+            "most_recent": true
+         },
+         "instance_type": "t2.micro",
+         "ssh_username": "ubuntu",
+         "ami_name": "{{user `environment`}}-vault-aws-auth-go"
+      }
+   ],
+   "provisioners": [
+     {
+        "type": "file",
+        "source": "../../../config.toml",
+        "destination": "/tmp/config.toml"
+     },
+     {
+        "type": "file",
+        "source": "../../../go.service",
+        "destination": "/tmp/go.service"
+     },
+      {
+         "type": "file",
+         "source": "go-vault-demo",
+         "destination": "/tmp/go-vault-demo"
+      },
+      {
+         "type": "shell",
+         "inline": [
+            "sleep 30",
+            "sudo apt-get update",
+            "sudo mkdir -p /app",
+            "sudo mv /tmp/go-vault-demo /app/go-vault-demo",
+            "sudo mv /tmp/config.toml /app/config.toml",
+            "sudo mv /tmp/go.service /etc/systemd/system/go.service"
+         ]
+      }
+   ]
+}
