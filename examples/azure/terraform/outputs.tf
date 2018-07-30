@@ -11,7 +11,7 @@ output "vault_client_id" {
 }
 
 output "vault_client_secret" {
-  value = "VT=uSgbTanZhyz@%nL9Hpd+Tfay_MRV#"
+  value = "${random_string.password.result}"
 }
 
 output "vault_identifier_uri" {

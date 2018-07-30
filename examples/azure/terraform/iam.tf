@@ -1,3 +1,9 @@
+resource "random_string" "password" {
+  length = 32
+  special = true
+}
+
+
 resource "azurerm_azuread_application" "vault"  {
   name = "${var.azure_env}-vault"
   identifier_uris = ["https://${var.azure_env}-vault.com/"]
@@ -15,7 +21,7 @@ resource "azurerm_role_assignment" "vault" {
 
 resource "azurerm_azuread_service_principal_password" "vault" {
   service_principal_id = "${azurerm_azuread_service_principal.vault.id}"
-  value                = "VT=uSgbTanZhyz@%nL9Hpd+Tfay_MRV#"
+  value                = "${random_string.password.result}"
   end_date             = "2019-01-01T00:00:00Z"
 }
 
