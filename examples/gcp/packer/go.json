@@ -7,7 +7,7 @@
    "builders": [
        {
          "type": "googlecompute",
-         "image_name": "{{ (user `environment`) | clean_image_name }}-vault-go-demo",
+         "image_name": "{{ (user `environment`) | clean_image_name }}-vault-auth-demo",
          "project_id": "{{user `gcp_project_id`}}",
          "source_image_family": "ubuntu-1604-lts",
          "ssh_username": "gcp-user",

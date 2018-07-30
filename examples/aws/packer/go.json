@@ -20,7 +20,7 @@
          },
          "instance_type": "t2.micro",
          "ssh_username": "ubuntu",
-         "ami_name": "{{user `environment`}}-vault-aws-auth-go"
+         "ami_name": "{{user `environment`}}-vault-auth-demo"
       }
    ],
    "provisioners": [
