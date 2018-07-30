@@ -1,12 +1,10 @@
 #!/bin/bash
 
 #Get our TF ouputs
-cd ../terraform
 VAULT_JSON_KEY=$(terraform output -state ../terraform/terraform.tfstate vault_sa_key)
 ORDER_SA=$(terraform output -state ../terraform/terraform.tfstate order_sa_email)
 GCP_ZONE=$(terraform output -state ../terraform/terraform.tfstate gcp_zone)
 GCP_PROJECT_ID=$(terraform output -state ../terraform/terraform.tfstate gcp_project_id)
-cd ../scripts
 
 #Auth methods
 vault auth enable -path=gcp-iam gcp

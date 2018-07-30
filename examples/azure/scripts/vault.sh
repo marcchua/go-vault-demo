@@ -1,13 +1,11 @@
 #!/bin/bash
 
 #Get our TF ouputs
-cd ../terraform
 VAULT_TENANT_ID=$(terraform output -state ../terraform/terraform.tfstate vault_tenant_id)
 VAULT_RESOURCE_URI=$(terraform output -state ../terraform/terraform.tfstate vault_identifier_uri)
 VAULT_CLIENT_ID=$(terraform output -state ../terraform/terraform.tfstate vault_client_id)
 VAULT_SECRET_ID=$(terraform output -state ../terraform/terraform.tfstate vault_client_secret)
 ORDER_PRINCIPAL_ID=$(terraform output -state ../terraform/terraform.tfstate order_principal_id)
-cd ../scripts
 
 #Auth method
 vault auth enable azure
