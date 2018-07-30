@@ -1,0 +1,54 @@
+{
+   "variables": {
+     "azure_client_id": "{{ env `ARM_CLIENT_ID` }}",
+     "azure_client_secret": "{{ env `ARM_CLIENT_SECRET` }}",
+     "azure_subscription_id": "{{ env `ARM_SUBSCRIPTION_ID` }}",
+     "azure_resource_group": "{{ env `AZURE_RESOURCE_GROUP` }}",
+     "azure_location": "{{ env `AZURE_LOCATION` }}",
+     "environment": "{{ env `PACKER_ENVIRONMENT` }}"
+   },
+   "builders": [
+       {
+         "type": "azure-arm",
+          "client_id": "{{ user `azure_client_id` }}",
+          "client_secret": "{{ user `azure_client_secret` }}",
+          "subscription_id": "{{ user `azure_subscription_id` }}",
+          "managed_image_resource_group_name": "{{ user `azure_resource_group` }}",
+          "managed_image_name": "{{ user `environment` }}-vault-auth-demo",
+          "location": "{{ user `azure_location` }}",
+          "image_publisher": "Canonical",
+          "image_offer": "UbuntuServer",
+          "image_sku": "16.04-LTS",
+          "os_type": "Linux",
+          "ssh_username": "packer"
+       }
+     ],
+   "provisioners": [
+     {
+        "type": "file",
+        "source": "../../../config.toml",
+        "destination": "/tmp/config.toml"
+     },
+     {
+        "type": "file",
+        "source": "../../../go.service",
+        "destination": "/tmp/go.service"
+     },
+      {
+         "type": "file",
+         "source": "go-vault-demo",
+         "destination": "/tmp/go-vault-demo"
+      },
+      {
+         "type": "shell",
+         "inline": [
+            "sleep 30",
+            "sudo apt-get update",
+            "sudo mkdir -p /app",
+            "sudo mv /tmp/go-vault-demo /app/go-vault-demo",
+            "sudo mv /tmp/config.toml /app/config.toml",
+            "sudo mv /tmp/go.service /etc/systemd/system/go.service"
+         ]
+      }
+   ]
+}

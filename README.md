@@ -1,7 +1,9 @@
 # go-vault-demo
 
 Go example for multi-cloud auth, dynamic secrets, and encryption with HashiCorp Vault.
-
+This project handles tokens and secrets in-memory, and is API driven. If you're looking for a templated approach, check out the below tools:
+- [Vault Agent (Auth)](https://www.vaultproject.io/docs/agent/autoauth/index.html)
+- [Consul-Template (Secrets)](https://github.com/hashicorp/consul-template)
 ----
 
 ## Demo Instruction
@@ -9,6 +11,7 @@ Go example for multi-cloud auth, dynamic secrets, and encryption with HashiCorp 
 This repository provides example deployments on various platforms:
 - [GCP](examples/gcp)
 - [AWS](examples/aws)
+- [Azure](examples/azure)
 <br>
 
 ### Setup

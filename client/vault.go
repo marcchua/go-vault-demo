@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	neturl "net/url"
+	"net/url"
 	"strings"
 	"time"
 
@@ -32,6 +32,16 @@ type Vault struct {
 	Credential     string
 	Role           string
 	Mount          string
+}
+
+type msiResponseJson struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    string `json:"expires_in"`
+	ExpiresOn    string `json:"expires_on"`
+	NotBefore    string `json:"not_before"`
+	Resource     string `json:"resource"`
+	TokenType    string `json:"token_type"`
 }
 
 var client *Client
@@ -276,7 +286,7 @@ func (v *Vault) Init() error {
 		token = secret.Auth.ClientToken
 		client.SetToken(token)
 	case "gcp-gce":
-		var url string
+		var metaUrl string
 
 		log.Println("Using GCP GCE authentication")
 
@@ -293,21 +303,21 @@ func (v *Vault) Init() error {
 
 		//If we are using the non default service account allow us to pass in the correct url
 		if len(v.Credential) > 0 {
-			url = fmt.Sprintf("http://metadata/computeMetadata/v1/instance/service-accounts/%s/login", v.Credential)
+			metaUrl = fmt.Sprintf("http://metadata/computeMetadata/v1/instance/service-accounts/%s/login", v.Credential)
 		} else {
-			url = "http://metadata/computeMetadata/v1/instance/service-accounts/default/identity"
+			metaUrl = "http://metadata/computeMetadata/v1/instance/service-accounts/default/identity"
 		}
 
 		//Build request
 		c := &http.Client{}
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest("GET", metaUrl, nil)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		//Add headers and query string
 		req.Header.Add("Metadata-Flavor", "Google")
-		q := neturl.Values{}
+		q := url.Values{}
 		q.Add("audience", fmt.Sprintf("%s/vault/%s", client.Address(), v.Role))
 		q.Add("format", "full")
 		req.URL.RawQuery = q.Encode()
@@ -329,6 +339,84 @@ func (v *Vault) Init() error {
 			map[string]interface{}{
 				"role": v.Role,
 				"jwt":  jwt,
+			})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		//Set client token
+		log.Printf("Metadata: %v", secret.Auth.Metadata)
+		token = secret.Auth.ClientToken
+		client.SetToken(token)
+	case "azure-msi":
+		log.Println("Using AZURE MSI authentication")
+
+		//Check Mount
+		if len(v.Mount) == 0 {
+			return errors.New("Auth mount not in config.")
+		}
+		log.Printf("Mount: auth/%s", v.Mount)
+
+		//Check Role
+		if len(v.Role) == 0 {
+			return errors.New("Azure role not in config.")
+		}
+		log.Printf("Role: %s", v.Role)
+
+		//Check resource
+		if len(v.Credential) == 0 {
+			return errors.New("Azure resource not in config.")
+		}
+		log.Printf("Credential: %s", v.Credential)
+
+		// Create HTTP request for MSI token to access Azure Resource Manager
+		var msiEndpoint *url.URL
+		msiEndpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token")
+		if err != nil {
+			log.Fatal("Error creating URL: ", err)
+		}
+		msiParams := url.Values{}
+		msiParams.Add("api-version", "2018-02-01")
+		msiParams.Add("resource", v.Credential)
+		msiEndpoint.RawQuery = msiParams.Encode()
+		req, err := http.NewRequest("GET", msiEndpoint.String(), nil)
+		if err != nil {
+			log.Fatal("Error creating HTTP request: ", err)
+		}
+		req.Header.Add("Metadata", "true")
+
+		// Call MSI /token endpoint
+		c := &http.Client{}
+		resp, err := c.Do(req)
+		if err != nil {
+			log.Fatal("Error calling token endpoint: ", err)
+		}
+
+		// Pull out response body
+		respBytes, err := ioutil.ReadAll(resp.Body)
+		defer resp.Body.Close()
+		if err != nil {
+			log.Fatal("Error reading response body : ", err)
+		}
+
+		//Check response from MSI
+		if resp.StatusCode != 200 {
+			log.Fatalf("Error getting token from MSI: %s", string(respBytes))
+		}
+
+		// Unmarshall response body into struct
+		var r msiResponseJson
+		err = json.Unmarshal(respBytes, &r)
+		if err != nil {
+			log.Fatal("Error unmarshalling the response:", err)
+		}
+
+		//Login
+		secret, err := client.Logical().Write(
+			fmt.Sprintf("auth/%s/login", v.Mount),
+			map[string]interface{}{
+				"role": v.Role,
+				"jwt":  r.AccessToken,
 			})
 		if err != nil {
 			log.Fatal(err)
