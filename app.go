@@ -14,6 +14,7 @@ import (
 	"github.com/lanceplarsen/go-vault-demo/config"
 	. "github.com/lanceplarsen/go-vault-demo/dao"
 	"github.com/lanceplarsen/go-vault-demo/models"
+	"github.com/dimiro1/health"
 )
 
 var configurator = config.Config{}
@@ -128,9 +129,15 @@ func init() {
 func main() {
 	//Router
 	r := mux.NewRouter()
+
+	//API
 	r.HandleFunc("/api/orders", AllOrdersEndpoint).Methods("GET")
 	r.HandleFunc("/api/orders", CreateOrderEndpoint).Methods("POST")
 	r.HandleFunc("/api/orders", DeleteOrdersEndpoint).Methods("DELETE")
+
+	//Health
+	health := health.NewHandler()
+	r.Path("/health").Handler(health).Methods("GET")
 
 	//Catch SIGINT AND SIGTERM to tear down tokens and secrets
 	var gracefulStop = make(chan os.Signal)
