@@ -1,7 +1,9 @@
 variable aws_region {}
 variable aws_ami {}
 variable aws_env {}
-
+variable "aws_instances" {
+  default = "1"
+}
 
 variable "vault_host" {}
 variable "vault_port" {}
