@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,12 +10,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/dimiro1/health"
+	"github.com/dimiro1/health/db"
 	"github.com/gorilla/mux"
 	"github.com/lanceplarsen/go-vault-demo/client"
 	"github.com/lanceplarsen/go-vault-demo/config"
 	. "github.com/lanceplarsen/go-vault-demo/dao"
 	"github.com/lanceplarsen/go-vault-demo/models"
-	"github.com/dimiro1/health"
+	_ "github.com/lib/pq"
 )
 
 var configurator = config.Config{}
@@ -98,12 +101,14 @@ func init() {
 		log.Fatal("Could not get DB role from config.")
 	}
 
-	//Get our DB secrets
+	//Get our DB secrets into config
 	log.Printf("DB role: %s", configurator.Database.Role)
 	secret, err := vault.GetSecret(fmt.Sprintf("%s/creds/%s", configurator.Database.Mount, configurator.Database.Role))
 	if err != nil {
 		log.Fatal(err)
 	}
+	configurator.Database.Username = secret.Data["username"].(string)
+	configurator.Database.Password = secret.Data["password"].(string)
 
 	//Start our Goroutine Renewal for the DB creds
 	log.Printf("DB User: %s", secret.Data["username"].(string))
@@ -115,10 +120,10 @@ func init() {
 	dao.Host = configurator.Database.Host
 	dao.Port = configurator.Database.Port
 	dao.Database = configurator.Database.Name
-	dao.User = secret.Data["username"].(string)
-	dao.Password = secret.Data["password"].(string)
+	dao.User = configurator.Database.Username
+	dao.Password = configurator.Database.Password
 
-	//Check our DB Conn
+	//Check our DAO Conn
 	err = dao.Connect()
 	if err != nil {
 		log.Fatal(err)
@@ -130,14 +135,18 @@ func main() {
 	//Router
 	r := mux.NewRouter()
 
-	//API
+	//API Routes
 	r.HandleFunc("/api/orders", AllOrdersEndpoint).Methods("GET")
 	r.HandleFunc("/api/orders", CreateOrderEndpoint).Methods("POST")
 	r.HandleFunc("/api/orders", DeleteOrdersEndpoint).Methods("DELETE")
 
-	//Health
-	health := health.NewHandler()
-	r.Path("/health").Handler(health).Methods("GET")
+	//Health Check Routes
+	h := health.NewHandler()
+	conn := fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable", configurator.Database.Username, configurator.Database.Password, configurator.Database.Name, configurator.Database.Host)
+	database, _ := sql.Open("postgres", conn)
+	pg := db.NewPostgreSQLChecker(database)
+	h.AddChecker("Postgres", pg)
+	r.Path("/health").Handler(h).Methods("GET")
 
 	//Catch SIGINT AND SIGTERM to tear down tokens and secrets
 	var gracefulStop = make(chan os.Signal)

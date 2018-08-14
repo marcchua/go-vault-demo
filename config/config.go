@@ -12,11 +12,13 @@ type Config struct {
 }
 
 type Database struct {
-	Host  string
-	Port  string
-	Name  string
-	Role  string
-	Mount string
+	Host     string
+	Port     string
+	Name     string
+	Role     string
+	Mount    string
+	Username string
+	Password string
 }
 
 type Vault struct {
