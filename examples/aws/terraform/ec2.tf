@@ -1,11 +1,11 @@
 data "aws_ami" "go" {
   most_recent = true
+  owners     = ["self"]
 
   filter {
     name   = "image-id"
     values = ["${var.aws_ami}"]
   }
-  owners     = ["self"]
 
 }
 
