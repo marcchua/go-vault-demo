@@ -16,6 +16,7 @@
                "name": "ubuntu/images/*ubuntu-xenial-16.04-amd64-server-*",
                "root-device-type": "ebs"
             },
+            "owners": ["099720109477"],
             "most_recent": true
          },
          "instance_type": "t2.micro",
@@ -45,8 +46,11 @@
             "sleep 30",
             "sudo apt-get update",
             "sudo mkdir -p /app",
+            "sudo useradd -r go",
             "sudo mv /tmp/go-vault-demo /app/go-vault-demo",
             "sudo mv /tmp/config.toml /app/config.toml",
+            "sudo chmod 750 /app/*",
+            "sudo chown go:go /app/*",
             "sudo mv /tmp/go.service /etc/systemd/system/go.service"
          ]
       }

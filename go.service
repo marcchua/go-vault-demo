@@ -3,7 +3,8 @@ Description=go
 After=syslog.target
 
 [Service]
-User=root
+User=go
+Group=go
 Restart=always
 RestartSec=10s
 WorkingDirectory=/app
