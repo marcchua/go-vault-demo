@@ -1,8 +1,7 @@
-output "go-iam" {
-  value = "${aws_instance.go-iam.*.public_dns}"
+output "go-iam-alb" {
+  value = "${aws_lb.go-iam.dns_name}"
 }
 
-
-output "ec2-iam" {
-  value = "${aws_instance.go-ec2.*.public_dns}"
+output "go-ec2-alb" {
+  value = "${aws_lb.go-ec2.dns_name}"
 }

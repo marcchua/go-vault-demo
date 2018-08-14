@@ -14,43 +14,17 @@ resource "aws_key_pair" "go" {
   public_key = "${tls_private_key.go.public_key_openssh}"
 }
 
-resource "aws_security_group" "go_auth_demo" {
-  name        = "go_auth_demo"
-  description = "Allow inbound for ssh and go"
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
-    cidr_blocks     = ["0.0.0.0/0"]
-  }
-}
-
-
-resource "aws_instance" "go-iam" {
-  count = "${var.aws_instances}"
-  ami           = "${data.aws_ami.go.id}"
+resource "aws_launch_configuration" "go_iam" {
+  name          = "${var.aws_env}-iam-launch-config"
+  image_id      = "${data.aws_ami.go.id}"
   instance_type = "t2.micro"
   iam_instance_profile = "${aws_iam_instance_profile.go.name}"
-  associate_public_ip_address = true
   key_name = "${aws_key_pair.go.key_name}"
-  security_groups = ["${aws_security_group.go_auth_demo.name}"]
-  tags {
-    env = "${var.aws_env}"
+  security_groups = ["${aws_security_group.go_app.id}"]
+  associate_public_ip_address = true
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   user_data = <<SCRIPT
@@ -76,17 +50,41 @@ SCRIPT
 
 }
 
-resource "aws_instance" "go-ec2" {
-  count = "${var.aws_instances}"
-  ami           = "${data.aws_ami.go.id}"
+resource "aws_autoscaling_group" "go_iam" {
+  name                 = "${var.aws_env}-iam-asg"
+  launch_configuration = "${aws_launch_configuration.go_iam.name}"
+  desired_capacity = "${var.aws_instances}"
+  min_size             = 1
+  max_size             = 10
+  vpc_zone_identifier = ["${module.vpc.public_subnets}"]
+  target_group_arns = ["${aws_lb_target_group.go-iam.id}"]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+
+  tags = [
+      {
+        key                 = "env"
+        value               = "${var.aws_env}"
+        propagate_at_launch = true
+      }
+    ]
+
+}
+
+resource "aws_launch_configuration" "go_ec2" {
+  name          = "${var.aws_env}-ec2-launch-config"
+  image_id      = "${data.aws_ami.go.id}"
   instance_type = "t2.micro"
   iam_instance_profile = "${aws_iam_instance_profile.go.name}"
-  associate_public_ip_address = true
   key_name = "${aws_key_pair.go.key_name}"
-  security_groups = ["${aws_security_group.go_auth_demo.name}"]
+  security_groups = ["${aws_security_group.go_app.id}"]
+  associate_public_ip_address = true
 
-  tags {
-    env = "${var.aws_env}"
+  lifecycle {
+    create_before_destroy = true
   }
 
   user_data = <<SCRIPT
@@ -109,5 +107,28 @@ EOF
 systemctl enable go.service
 service go restart
 SCRIPT
+
+}
+
+resource "aws_autoscaling_group" "go_ec2" {
+  name                 = "${var.aws_env}-ec2-asg"
+  launch_configuration = "${aws_launch_configuration.go_ec2.name}"
+  desired_capacity = "${var.aws_instances}"
+  min_size             = 1
+  max_size             = 10
+  vpc_zone_identifier = ["${module.vpc.public_subnets}"]
+  target_group_arns = ["${aws_lb_target_group.go-ec2.id}"]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = [
+      {
+        key                 = "env"
+        value               = "${var.aws_env}"
+        propagate_at_launch = true
+      }
+    ]
 
 }
