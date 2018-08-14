@@ -5,6 +5,7 @@ data "aws_ami" "go" {
     name   = "image-id"
     values = ["${var.aws_ami}"]
   }
+  owners     = ["self"]
 
 }
 
