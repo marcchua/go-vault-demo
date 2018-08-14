@@ -1,10 +1,10 @@
 data "google_compute_image" "go" {
   name    = "${var.gcp_image}"
-  project = "${var.gcp_project_id}"
+  project = "${var.gcp_project}"
 }
 
 resource "google_compute_instance_template" "iam_instance_template" {
-  name  = "go-iam"
+  name  = "go-iam-template"
   machine_type = "n1-standard-1"
   region       = "${var.gcp_region}"
 
@@ -25,6 +25,12 @@ resource "google_compute_instance_template" "iam_instance_template" {
     email  = "${google_service_account.go.email}"
     scopes = ["cloud-platform"]
   }
+
+  metadata {
+    sshKeys = "ubuntu:${tls_private_key.go.public_key_openssh}"
+  }
+
+  tags = ["go-iam-apps"]
 
   metadata_startup_script = <<SCRIPT
 cat << EOF > /app/config.toml
@@ -52,14 +58,20 @@ SCRIPT
 resource "google_compute_instance_group_manager" "iam_group_manager" {
   name               = "go-iam-apps"
   instance_template  = "${google_compute_instance_template.iam_instance_template.self_link}"
-  base_instance_name = "go-iam-group"
+  base_instance_name = "go-iam"
   zone               = "${var.gcp_zone}"
   target_size        = "${var.gcp_instances}"
+
+  named_port {
+    name = "go"
+    port = 3000
+  }
+
 }
 
 
 resource "google_compute_instance_template" "gce_instance_template" {
-  name  = "go-gce"
+  name  = "go-gce-template"
   machine_type = "n1-standard-1"
   region       = "${var.gcp_region}"
 
@@ -79,6 +91,12 @@ resource "google_compute_instance_template" "gce_instance_template" {
   service_account {
     scopes = ["cloud-platform"]
   }
+
+  metadata {
+    sshKeys = "ubuntu:${tls_private_key.go.public_key_openssh}"
+  }
+
+  tags = ["go-gce-apps"]
 
   metadata_startup_script = <<SCRIPT
 cat << EOF > /app/config.toml
@@ -105,7 +123,12 @@ SCRIPT
 resource "google_compute_instance_group_manager" "gce_group_manager" {
   name               = "go-gce-apps"
   instance_template  = "${google_compute_instance_template.gce_instance_template.self_link}"
-  base_instance_name = "go-gce-group"
+  base_instance_name = "go-gce"
   zone               = "${var.gcp_zone}"
   target_size        = "${var.gcp_instances}"
+
+  named_port {
+    name = "go"
+    port = 3000
+  }
 }

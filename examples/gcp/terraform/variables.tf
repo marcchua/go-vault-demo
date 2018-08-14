@@ -1,7 +1,8 @@
-variable "gcp_project_id" {}
+variable "gcp_project" {}
 variable "gcp_region" {}
 variable "gcp_zone" {}
 variable "gcp_image" {}
+variable "gcp_env" {}
 variable "gcp_instances" {
   default = "1"
 }

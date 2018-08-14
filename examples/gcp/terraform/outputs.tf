@@ -11,9 +11,17 @@ output "order_sa_email" {
 }
 
 output "gcp_project_id" {
-  value = "${var.gcp_project_id}"
+  value = "${var.gcp_project}"
 }
 
 output "gcp_zone" {
   value = "${var.gcp_zone}"
+}
+
+output "gcp_iam_lb" {
+  value = "${module.go-iam-lb.external_ip}"
+}
+
+output "gcp_gce_lb" {
+  value = "${module.go-gce-lb.external_ip}"
 }

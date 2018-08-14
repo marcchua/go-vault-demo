@@ -32,7 +32,7 @@ resource "google_service_account_iam_binding" "go" {
 }
 
 resource "google_project_iam_member" "project" {
-  project = "ll-go-vault-demo"
+  project = "${var.gcp_project}"
   role    = "roles/viewer"
   member  = "serviceAccount:${google_service_account.vault.email}"
 }
