@@ -1,9 +1,3 @@
-resource "random_string" "password" {
-  length = 32
-  special = true
-}
-
-
 resource "azurerm_azuread_application" "vault"  {
   name = "${var.azure_env}-vault"
   identifier_uris = ["https://${var.azure_env}-vault.com/"]

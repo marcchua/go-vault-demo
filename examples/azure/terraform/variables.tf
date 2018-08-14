@@ -2,6 +2,9 @@ variable "azure_env" {}
 variable "azure_location" {}
 variable "azure_image_name" {}
 variable "azure_image_resource_group" {}
+variable "azure_instances" {
+  default = "1"
+}
 
 variable "vault_host" {}
 variable "vault_port" {}

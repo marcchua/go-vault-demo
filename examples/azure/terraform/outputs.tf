@@ -17,3 +17,11 @@ output "vault_client_secret" {
 output "vault_identifier_uri" {
   value = "https://${var.azure_env}-vault.com/"
 }
+
+output "go-app-dns" {
+  value = "${azurerm_public_ip.lb_ip.fqdn}"
+}
+
+output "go-jumpbox-dns" {
+  value = "${azurerm_public_ip.jumpbox_ip.fqdn}"
+}
