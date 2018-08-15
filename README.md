@@ -12,6 +12,7 @@ This repository provides example deployments on various platforms:
 - [AWS](examples/aws)
 - [GCP](examples/gcp)
 - [Azure](examples/azure)
+- [Nomad](examples/nomad)
 - [K8s](examples/kubernetes)
 - [Vagrant](examples/vagrant)
 <br>
