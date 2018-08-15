@@ -9,8 +9,8 @@ This project handles tokens and secrets in-memory, and is API driven. If you're 
 ## Demo Instruction
 
 This repository provides example deployments on various platforms:
-- [GCP](examples/gcp)
 - [AWS](examples/aws)
+- [GCP](examples/gcp)
 - [Azure](examples/azure)
 - [K8s](examples/kubernetes)
 - [Vagrant](examples/vagrant)
@@ -18,7 +18,7 @@ This repository provides example deployments on various platforms:
 
 ### Setup
 
-You can run the sample as a standalone Go application. You will need a Vault instance and a Postgres instance to get started.
+You can run the sample as a standalone Go application. You will need a Vault instance and a Postgres instance to get started. If you need a Postgres instance you can look at the [postgres examples](examples/postgres) for managed deployments.
 
 1. Run the [Postgres script](scripts/postgres.sql) at your Postgres instance.
 2. Run the [Vault script](scripts/vault.sh) at your Vault instance.
