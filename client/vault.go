@@ -46,7 +46,7 @@ type msiResponseJson struct {
 
 var client *Client
 
-func (v *Vault) Init() error {
+func (v *Vault) Initialize() error {
 	var err error
 	var renew bool
 	var token string
@@ -72,7 +72,7 @@ func (v *Vault) Init() error {
 			log.Println("Got token from config file")
 			token = v.Credential
 		} else {
-			log.Fatal("Could not get Vault token.")
+			return errors.New("Could not get Vault token.")
 		}
 		client.SetToken(token)
 	case "kubernetes":
@@ -152,11 +152,11 @@ func (v *Vault) Init() error {
 		//Get headers
 		headersJson, err := json.Marshal(stsRequest.HTTPRequest.Header)
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 		requestBody, err := ioutil.ReadAll(stsRequest.HTTPRequest.Body)
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Construct payload
@@ -170,12 +170,12 @@ func (v *Vault) Init() error {
 		path := fmt.Sprintf("auth/%s/login", v.Mount)
 		secret, err := client.Logical().Write(path, loginData)
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Do we need this?
 		if secret == nil {
-			log.Fatal("empty response from credential provider")
+			errors.New("empty response from credential provider")
 		}
 
 		//Set client token
@@ -195,7 +195,7 @@ func (v *Vault) Init() error {
 		ec2Session := session.Must(session.NewSession())
 		svc := ec2metadata.New(ec2Session)
 		if !svc.Available() {
-			log.Fatal("Metadata service not available")
+			return errors.New("Metadata service not available")
 		}
 
 		//Get PKCS7 signed
@@ -211,7 +211,7 @@ func (v *Vault) Init() error {
 				"pkcs7": pkcs7,
 			})
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Set client token
@@ -258,7 +258,7 @@ func (v *Vault) Init() error {
 		//Payload
 		payloadBytes, err := json.Marshal(jwtPayload)
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 		signJwtReq := &iam.SignJwtRequest{
 			Payload: string(payloadBytes),
@@ -267,7 +267,7 @@ func (v *Vault) Init() error {
 		//Response
 		resp, err := iamService.Projects.ServiceAccounts.SignJwt(resourceName, signJwtReq).Do()
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Login
@@ -278,7 +278,7 @@ func (v *Vault) Init() error {
 				"jwt":  resp.SignedJwt,
 			})
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Set client token
@@ -298,7 +298,7 @@ func (v *Vault) Init() error {
 
 		//Check metadata service is available
 		if !metadata.OnGCE() {
-			log.Fatal("Metadata service not available")
+			return errors.New("Metadata service not available")
 		}
 
 		//If we are using the non default service account allow us to pass in the correct url
@@ -312,7 +312,7 @@ func (v *Vault) Init() error {
 		c := &http.Client{}
 		req, err := http.NewRequest("GET", metaUrl, nil)
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Add headers and query string
@@ -323,14 +323,14 @@ func (v *Vault) Init() error {
 		req.URL.RawQuery = q.Encode()
 		resp, err := c.Do(req)
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Get response jwt
 		body, err := ioutil.ReadAll(resp.Body)
 		jwt := string(body)
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Login
@@ -341,7 +341,7 @@ func (v *Vault) Init() error {
 				"jwt":  jwt,
 			})
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Set client token
@@ -373,7 +373,7 @@ func (v *Vault) Init() error {
 		var msiEndpoint *url.URL
 		msiEndpoint, err := url.Parse("http://169.254.169.254/metadata/identity/oauth2/token")
 		if err != nil {
-			log.Fatal("Error creating URL: ", err)
+			return fmt.Errorf("Error creating URL: ", err)
 		}
 		msiParams := url.Values{}
 		msiParams.Add("api-version", "2018-02-01")
@@ -381,7 +381,7 @@ func (v *Vault) Init() error {
 		msiEndpoint.RawQuery = msiParams.Encode()
 		req, err := http.NewRequest("GET", msiEndpoint.String(), nil)
 		if err != nil {
-			log.Fatal("Error creating HTTP request: ", err)
+			return fmt.Errorf("Error creating HTTP request: ", err)
 		}
 		req.Header.Add("Metadata", "true")
 
@@ -389,26 +389,26 @@ func (v *Vault) Init() error {
 		c := &http.Client{}
 		resp, err := c.Do(req)
 		if err != nil {
-			log.Fatal("Error calling token endpoint: ", err)
+			return fmt.Errorf("Error calling token endpoint: ", err)
 		}
 
 		// Pull out response body
 		respBytes, err := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
 		if err != nil {
-			log.Fatal("Error reading response body : ", err)
+			return fmt.Errorf("Error reading response body : ", err)
 		}
 
 		//Check response from MSI
 		if resp.StatusCode != 200 {
-			log.Fatalf("Error getting token from MSI: %s", string(respBytes))
+			return fmt.Errorf("Error getting token from MSI: %s", string(respBytes))
 		}
 
 		// Unmarshall response body into struct
 		var r msiResponseJson
 		err = json.Unmarshal(respBytes, &r)
 		if err != nil {
-			log.Fatal("Error unmarshalling the response:", err)
+			return fmt.Errorf("Error unmarshalling the response:", err)
 		}
 
 		//Login
@@ -419,7 +419,7 @@ func (v *Vault) Init() error {
 				"jwt":  r.AccessToken,
 			})
 		if err != nil {
-			log.Fatal(err)
+			return(err)
 		}
 
 		//Set client token
@@ -427,7 +427,7 @@ func (v *Vault) Init() error {
 		token = secret.Auth.ClientToken
 		client.SetToken(token)
 	default:
-		log.Fatalf("Auth method %s is not supported", v.Authentication)
+		return fmt.Errorf("Auth method %s is not supported", v.Authentication)
 	}
 
 	//See if the token we got is renewable

@@ -73,7 +73,7 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	w.Write(response)
 }
 
-func init() {
+func main() {
 	log.Println("Starting server initialization")
 
 	//Get our config from the file
@@ -90,7 +90,7 @@ func init() {
 
 	//Init it
 	log.Println("Starting vault initialization")
-	err := vault.Init()
+	err := vault.Initialize()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -129,9 +129,6 @@ func init() {
 		log.Fatal(err)
 	}
 
-}
-
-func main() {
 	//Router
 	r := mux.NewRouter()
 
