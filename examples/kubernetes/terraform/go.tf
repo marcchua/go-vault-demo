@@ -59,8 +59,8 @@ resource "kubernetes_service" "go-frontend" {
             App = "${kubernetes_replication_controller.go-frontend.metadata.0.labels.App}"
         }
         port {
-            port = 8080
-            target_port = 8080
+            port = 3000
+            target_port = 3000
         }
         type = "LoadBalancer"
     }
