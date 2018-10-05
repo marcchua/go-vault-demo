@@ -1,5 +1,5 @@
 variable "k8s_instances" {
-  default = 0
+  default = 1
  }
 
 variable "vault_host" {
@@ -42,4 +42,6 @@ variable "postgres_role" {
   default = "order"
 }
 
-variable "go_docker_container" {}
+variable "go_docker_container" {
+  default = "lanceplarsen/go-vault-demo"
+}

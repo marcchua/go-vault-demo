@@ -3,9 +3,3 @@ resource "kubernetes_service_account" "go" {
         name = "go"
     }
 }
-
-resource "kubernetes_service_account" "vault" {
-    metadata {
-        name = "vault"
-    }
-}
