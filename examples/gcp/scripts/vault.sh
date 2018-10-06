@@ -18,7 +18,7 @@ vault write auth/gcp-gce/config credentials="${VAULT_JSON_KEY}"
 #Configure the roles
 vault write auth/gcp-iam/role/order\
     type="iam" \
-    project_id="ll-go-vault-demo" \
+    project_id="${GCP_PROJECT_ID}" \
     policies="order" \
     bound_service_accounts="${ORDER_SA}"
 
