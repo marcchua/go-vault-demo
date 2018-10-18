@@ -10,9 +10,6 @@ path "transit/encrypt/order" {
 }
 path "database/creds/order" {
   capabilities = ["read"]
-}
-path "sys/renew/*" {
-  capabilities = ["update"]
 }' | vault policy write order -
 
 #*****Postgres Confg*****
