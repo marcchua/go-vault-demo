@@ -15,17 +15,19 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/lanceplarsen/go-vault-demo/client"
 	"github.com/lanceplarsen/go-vault-demo/config"
-	. "github.com/lanceplarsen/go-vault-demo/dao"
+	"github.com/lanceplarsen/go-vault-demo/dao"
 	"github.com/lanceplarsen/go-vault-demo/models"
+	"github.com/lanceplarsen/go-vault-demo/service"
 	_ "github.com/lib/pq"
 )
 
 var configurator = config.Config{}
 var vault = client.Vault{}
-var dao = OrderDAO{}
+var orderDao = dao.Order{}
+var orderService = service.Order{}
 
 func AllOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
-	orders, err := dao.FindAll()
+	orders, err := orderService.GetOrders()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -46,7 +48,7 @@ func CreateOrderEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//Respond with the updated order
-	order, err := dao.Insert(order)
+	order, err := orderService.CreateOrder(order)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -55,7 +57,7 @@ func CreateOrderEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
-	if err := dao.DeleteAll(); err != nil {
+	if err := orderService.DeleteOrders(); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -107,6 +109,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//Update our dynamic configuration
 	configurator.Database.Username = secret.Data["username"].(string)
 	configurator.Database.Password = secret.Data["password"].(string)
 
@@ -116,18 +120,21 @@ func main() {
 	go vault.RenewSecret(secret)
 
 	//DAO config
-	dao.Vault = &vault
-	dao.Host = configurator.Database.Host
-	dao.Port = configurator.Database.Port
-	dao.Database = configurator.Database.Name
-	dao.User = configurator.Database.Username
-	dao.Password = configurator.Database.Password
+	orderDao.Host = configurator.Database.Host
+	orderDao.Port = configurator.Database.Port
+	orderDao.Database = configurator.Database.Name
+	orderDao.User = configurator.Database.Username
+	orderDao.Password = configurator.Database.Password
 
-	//Check our DAO Conn
-	err = dao.Connect()
+	//Check our DAO connection
+	err = orderDao.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//Create service
+	orderService.Vault = &vault
+	orderService.Dao   = &orderDao
 
 	//Router
 	r := mux.NewRouter()
@@ -145,7 +152,7 @@ func main() {
 	h.AddChecker("Postgres", pg)
 	r.Path("/health").Handler(h).Methods("GET")
 
-	//Catch SIGINT AND SIGTERM to tear down tokens and secrets
+	//Catch SIGINT AND SIGTERM to gracefully tear down tokens and secrets
 	var gracefulStop = make(chan os.Signal)
 	signal.Notify(gracefulStop, syscall.SIGTERM)
 	signal.Notify(gracefulStop, syscall.SIGINT)
