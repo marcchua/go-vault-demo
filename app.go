@@ -21,9 +21,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var configurator = config.Config{}
-var vault = client.Vault{}
-var orderDao = dao.Order{}
 var orderService = service.Order{}
 
 func AllOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -79,16 +76,19 @@ func main() {
 	log.Println("Starting server initialization")
 
 	//Get our config from the file
+	var configurator = config.Config{}
 	configurator.Read()
 
 	//Server params
-	vault.Host = configurator.Vault.Host
-	vault.Port = fmt.Sprintf("%v", configurator.Vault.Port)
-	vault.Scheme = configurator.Vault.Scheme
-	vault.Authentication = configurator.Vault.Authentication
-	vault.Credential = configurator.Vault.Credential
-	vault.Role = configurator.Vault.Role
-	vault.Mount = configurator.Vault.Mount
+	var vault = client.Vault{
+		Host:           configurator.Vault.Host,
+		Port:           fmt.Sprintf("%v", configurator.Vault.Port),
+		Scheme:         configurator.Vault.Scheme,
+		Authentication: configurator.Vault.Authentication,
+		Credential:     configurator.Vault.Credential,
+		Role:           configurator.Vault.Role,
+		Mount:          configurator.Vault.Mount,
+	}
 
 	//Init it
 	log.Println("Starting vault initialization")
@@ -120,11 +120,13 @@ func main() {
 	go vault.RenewSecret(secret)
 
 	//DAO config
-	orderDao.Host = configurator.Database.Host
-	orderDao.Port = fmt.Sprintf("%v", configurator.Database.Port)
-	orderDao.Database = configurator.Database.Name
-	orderDao.User = configurator.Database.Username
-	orderDao.Password = configurator.Database.Password
+	var orderDao = dao.Order{
+		Host:     configurator.Database.Host,
+		Port:     fmt.Sprintf("%v", configurator.Database.Port),
+		Database: configurator.Database.Name,
+		User:     configurator.Database.Username,
+		Password: configurator.Database.Password,
+	}
 
 	//Check our DAO connection
 	err = orderDao.Connect()
