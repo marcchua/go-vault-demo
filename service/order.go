@@ -2,24 +2,24 @@ package service
 
 import (
 	"encoding/base64"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
-	"fmt"
 
-  "github.com/lanceplarsen/go-vault-demo/client"
-  "github.com/lanceplarsen/go-vault-demo/dao"
-  "github.com/lanceplarsen/go-vault-demo/models"
+	"github.com/lanceplarsen/go-vault-demo/client"
+	"github.com/lanceplarsen/go-vault-demo/dao"
+	"github.com/lanceplarsen/go-vault-demo/models"
 )
 
 type Order struct {
-	Vault    *client.Vault
-  Dao      *dao.Order
+	Vault      *client.Vault
+	Dao        *dao.Order
 	Encyrption Transit
 }
 
 type Transit struct {
-	Key  string
+	Key   string
 	Mount string
 }
 
@@ -34,7 +34,7 @@ func (o *Order) GetOrders() ([]models.Order, error) {
 
 	//Decrypt these. TODO Could use a batch decyrpt opp here
 	for _, order := range eOrders {
-		dOrder, err := o.Vault.Decrypt(fmt.Sprintf("%s/decrypt/%s",o.Encyrption.Mount,o.Encyrption.Key), order.CustomerName)
+		dOrder, err := o.Vault.Decrypt(fmt.Sprintf("%s/decrypt/%s", o.Encyrption.Mount, o.Encyrption.Key), order.CustomerName)
 		if err != nil {
 			log.Printf("Unable to decrypt order: %s", strconv.FormatInt(order.Id, 10))
 		} else {
@@ -56,14 +56,14 @@ func (o *Order) CreateOrder(order models.Order) (models.Order, error) {
 
 	//Encrypt it
 	encode := base64.StdEncoding.EncodeToString([]byte(order.CustomerName))
-	cipher, err := o.Vault.Encrypt(fmt.Sprintf("%s/encrypt/%s",o.Encyrption.Mount,o.Encyrption.Key), encode)
+	cipher, err := o.Vault.Encrypt(fmt.Sprintf("%s/encrypt/%s", o.Encyrption.Mount, o.Encyrption.Key), encode)
 	if err != nil {
 		return order, err
 	}
 	order.CustomerName = cipher
 
 	//Insert the order=
-  order, err = o.Dao.Insert(order)
+	order, err = o.Dao.Insert(order)
 
 	//If the order was inserted successfully send back the unencrypted customer
 	order.CustomerName = ucust
@@ -71,8 +71,7 @@ func (o *Order) CreateOrder(order models.Order) (models.Order, error) {
 	return order, nil
 }
 
-
 func (o *Order) DeleteOrders() error {
-  err := o.Dao.DeleteAll()
+	err := o.Dao.DeleteAll()
 	return err
 }

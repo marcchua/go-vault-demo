@@ -152,11 +152,11 @@ func (v *Vault) Initialize() error {
 		//Get headers
 		headersJson, err := json.Marshal(stsRequest.HTTPRequest.Header)
 		if err != nil {
-			return(err)
+			return (err)
 		}
 		requestBody, err := ioutil.ReadAll(stsRequest.HTTPRequest.Body)
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Construct payload
@@ -170,7 +170,7 @@ func (v *Vault) Initialize() error {
 		path := fmt.Sprintf("auth/%s/login", v.Mount)
 		secret, err := client.Logical().Write(path, loginData)
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Do we need this?
@@ -211,7 +211,7 @@ func (v *Vault) Initialize() error {
 				"pkcs7": pkcs7,
 			})
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Set client token
@@ -258,7 +258,7 @@ func (v *Vault) Initialize() error {
 		//Payload
 		payloadBytes, err := json.Marshal(jwtPayload)
 		if err != nil {
-			return(err)
+			return (err)
 		}
 		signJwtReq := &iam.SignJwtRequest{
 			Payload: string(payloadBytes),
@@ -267,7 +267,7 @@ func (v *Vault) Initialize() error {
 		//Response
 		resp, err := iamService.Projects.ServiceAccounts.SignJwt(resourceName, signJwtReq).Do()
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Login
@@ -278,7 +278,7 @@ func (v *Vault) Initialize() error {
 				"jwt":  resp.SignedJwt,
 			})
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Set client token
@@ -312,7 +312,7 @@ func (v *Vault) Initialize() error {
 		c := &http.Client{}
 		req, err := http.NewRequest("GET", metaUrl, nil)
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Add headers and query string
@@ -323,14 +323,14 @@ func (v *Vault) Initialize() error {
 		req.URL.RawQuery = q.Encode()
 		resp, err := c.Do(req)
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Get response jwt
 		body, err := ioutil.ReadAll(resp.Body)
 		jwt := string(body)
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Login
@@ -341,7 +341,7 @@ func (v *Vault) Initialize() error {
 				"jwt":  jwt,
 			})
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Set client token
@@ -419,7 +419,7 @@ func (v *Vault) Initialize() error {
 				"jwt":  r.AccessToken,
 			})
 		if err != nil {
-			return(err)
+			return (err)
 		}
 
 		//Set client token

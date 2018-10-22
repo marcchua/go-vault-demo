@@ -11,26 +11,26 @@ type Config struct {
 		Port string `toml:"port"`
 	} `toml:"server"`
 	Database struct {
-		Host string `toml:"host"`
-		Port string `toml:"port"`
-		Name string `toml:"name"`
+		Host     string `toml:"host"`
+		Port     string `toml:"port"`
+		Name     string `toml:"name"`
 		Username string `toml:"username"`
 		Password string `toml:"password"`
 	} `toml:"database"`
 	Vault struct {
-		Host string `toml:"host"`
-		Port string `toml:"port"`
-		Scheme string `toml:"scheme"`
+		Host           string `toml:"host"`
+		Port           string `toml:"port"`
+		Scheme         string `toml:"scheme"`
 		Authentication string `toml:"authentication"`
-		Mount string `toml:"mount"`
-		Role string `toml:"role"`
-		Credential string `toml:"credential"`
-		Database struct {
+		Mount          string `toml:"mount"`
+		Role           string `toml:"role"`
+		Credential     string `toml:"credential"`
+		Database       struct {
 			Mount string `toml:"mount"`
-			Role string `toml:"role"`
+			Role  string `toml:"role"`
 		} `toml:"database"`
 		Transit struct {
-			Key string `toml:"key"`
+			Key   string `toml:"key"`
 			Mount string `toml:"mount"`
 		} `toml:"transit"`
 	} `toml:"vault"`

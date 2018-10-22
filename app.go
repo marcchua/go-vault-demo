@@ -83,7 +83,7 @@ func main() {
 
 	//Server params
 	vault.Host = configurator.Vault.Host
-	vault.Port = fmt.Sprintf("%v",configurator.Vault.Port)
+	vault.Port = fmt.Sprintf("%v", configurator.Vault.Port)
 	vault.Scheme = configurator.Vault.Scheme
 	vault.Authentication = configurator.Vault.Authentication
 	vault.Credential = configurator.Vault.Credential
@@ -121,7 +121,7 @@ func main() {
 
 	//DAO config
 	orderDao.Host = configurator.Database.Host
-	orderDao.Port = fmt.Sprintf("%v",configurator.Database.Port)
+	orderDao.Port = fmt.Sprintf("%v", configurator.Database.Port)
 	orderDao.Database = configurator.Database.Name
 	orderDao.User = configurator.Database.Username
 	orderDao.Password = configurator.Database.Password
@@ -134,7 +134,7 @@ func main() {
 
 	//Create service
 	orderService.Vault = &vault
-	orderService.Dao   = &orderDao
+	orderService.Dao = &orderDao
 	orderService.Encyrption.Key = configurator.Vault.Transit.Key
 	orderService.Encyrption.Mount = configurator.Vault.Transit.Mount
 
@@ -166,8 +166,8 @@ func main() {
 	}()
 
 	//Start server
-	log.Println(fmt.Sprintf("Server is now accepting requests on port %v",configurator.Server.Port))
-	if err := http.ListenAndServe(fmt.Sprintf(":%v",configurator.Server.Port), r); err != nil {
+	log.Println(fmt.Sprintf("Server is now accepting requests on port %v", configurator.Server.Port))
+	if err := http.ListenAndServe(fmt.Sprintf(":%v", configurator.Server.Port), r); err != nil {
 		log.Fatal(err)
 	}
 }
