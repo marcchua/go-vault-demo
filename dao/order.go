@@ -17,15 +17,15 @@ type Order struct {
 
 var db *pg.DB
 
-func (o *Order) Connect() error {
+func (d *Order) Connect() error {
 	var n int
 
 	//conn string
 	db = pg.Connect(&pg.Options{
-		User:     o.User,
-		Password: o.Password,
-		Addr:     fmt.Sprintf("%s:%s", o.Host, o.Port),
-		Database: o.Database,
+		User:     d.User,
+		Password: d.Password,
+		Addr:     fmt.Sprintf("%s:%s", d.Host, d.Port),
+		Database: d.Database,
 	})
 
 	//Check our connection
@@ -33,12 +33,12 @@ func (o *Order) Connect() error {
 	return err
 }
 
-func (o *Order) Close() error {
+func (d *Order) Close() error {
 	err := db.Close()
 	return err
 }
 
-func (o *Order) FindAll() ([]models.Order, error) {
+func (d *Order) FindAll() ([]models.Order, error) {
 	var orders []models.Order
 
 	//Go get the orders
@@ -50,7 +50,7 @@ func (o *Order) FindAll() ([]models.Order, error) {
 	return orders, nil
 }
 
-func (o *Order) DeleteAll() error {
+func (d *Order) DeleteAll() error {
 	var ids []int
 
 	//Find the order ids
@@ -71,7 +71,7 @@ func (o *Order) DeleteAll() error {
 	return nil
 }
 
-func (o *Order) Insert(order models.Order) (models.Order, error) {
+func (d *Order) Insert(order models.Order) (models.Order, error) {
 	err := db.Insert(&order)
 	if err != nil {
 		return order, err

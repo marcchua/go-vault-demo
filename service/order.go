@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"time"
+	"fmt"
 
   "github.com/lanceplarsen/go-vault-demo/client"
   "github.com/lanceplarsen/go-vault-demo/dao"
@@ -14,8 +15,13 @@ import (
 type Order struct {
 	Vault    *client.Vault
   Dao      *dao.Order
+	Encyrption Transit
 }
 
+type Transit struct {
+	Key  string
+	Mount string
+}
 
 func (o *Order) GetOrders() ([]models.Order, error) {
 	var eOrders []models.Order
@@ -28,7 +34,7 @@ func (o *Order) GetOrders() ([]models.Order, error) {
 
 	//Decrypt these. TODO Could use a batch decyrpt opp here
 	for _, order := range eOrders {
-		dOrder, err := o.Vault.Decrypt("/transit/decrypt/order", order.CustomerName)
+		dOrder, err := o.Vault.Decrypt(fmt.Sprintf("%s/decrypt/%s",o.Encyrption.Mount,o.Encyrption.Key), order.CustomerName)
 		if err != nil {
 			log.Printf("Unable to decrypt order: %s", strconv.FormatInt(order.Id, 10))
 		} else {
@@ -50,20 +56,19 @@ func (o *Order) CreateOrder(order models.Order) (models.Order, error) {
 
 	//Encrypt it
 	encode := base64.StdEncoding.EncodeToString([]byte(order.CustomerName))
-	//Get plaintext customer
-	cipher, err := o.Vault.Encrypt("/transit/encrypt/order", encode)
+	cipher, err := o.Vault.Encrypt(fmt.Sprintf("%s/encrypt/%s",o.Encyrption.Mount,o.Encyrption.Key), encode)
 	if err != nil {
 		return order, err
 	}
-
-	//Insert the order
 	order.CustomerName = cipher
-	o.Dao.Insert(order)
+
+	//Insert the order=
+  order, err = o.Dao.Insert(order)
 
 	//If the order was inserted successfully send back the unencrypted customer
 	order.CustomerName = ucust
 
-	return models.Order{}, nil
+	return order, nil
 }
 
 

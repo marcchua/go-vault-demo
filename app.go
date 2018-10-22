@@ -83,7 +83,7 @@ func main() {
 
 	//Server params
 	vault.Host = configurator.Vault.Host
-	vault.Port = configurator.Vault.Port
+	vault.Port = fmt.Sprintf("%v",configurator.Vault.Port)
 	vault.Scheme = configurator.Vault.Scheme
 	vault.Authentication = configurator.Vault.Authentication
 	vault.Credential = configurator.Vault.Credential
@@ -99,13 +99,13 @@ func main() {
 
 	//Make sure we got a DB role
 	log.Println("Starting DB initialization")
-	if len(configurator.Database.Role) == 0 {
+	if len(configurator.Vault.Database.Role) == 0 {
 		log.Fatal("Could not get DB role from config.")
 	}
 
 	//Get our DB secrets into config
-	log.Printf("DB role: %s", configurator.Database.Role)
-	secret, err := vault.GetSecret(fmt.Sprintf("%s/creds/%s", configurator.Database.Mount, configurator.Database.Role))
+	log.Printf("DB role: %s", configurator.Vault.Database.Role)
+	secret, err := vault.GetSecret(fmt.Sprintf("%s/creds/%s", configurator.Vault.Database.Mount, configurator.Vault.Database.Role))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func main() {
 
 	//DAO config
 	orderDao.Host = configurator.Database.Host
-	orderDao.Port = configurator.Database.Port
+	orderDao.Port = fmt.Sprintf("%v",configurator.Database.Port)
 	orderDao.Database = configurator.Database.Name
 	orderDao.User = configurator.Database.Username
 	orderDao.Password = configurator.Database.Password
@@ -135,6 +135,8 @@ func main() {
 	//Create service
 	orderService.Vault = &vault
 	orderService.Dao   = &orderDao
+	orderService.Encyrption.Key = configurator.Vault.Transit.Key
+	orderService.Encyrption.Mount = configurator.Vault.Transit.Mount
 
 	//Router
 	r := mux.NewRouter()
@@ -164,8 +166,8 @@ func main() {
 	}()
 
 	//Start server
-	log.Println("Server is now accepting requests on port 3000")
-	if err := http.ListenAndServe(":3000", r); err != nil {
+	log.Println(fmt.Sprintf("Server is now accepting requests on port %v",configurator.Server.Port))
+	if err := http.ListenAndServe(fmt.Sprintf(":%v",configurator.Server.Port), r); err != nil {
 		log.Fatal(err)
 	}
 }
