@@ -82,7 +82,7 @@ func main() {
 	//Server params
 	var vault = client.Vault{
 		Host:           configurator.Vault.Host,
-		Port:           fmt.Sprintf("%v", configurator.Vault.Port),
+		Port:           configurator.Vault.Port,
 		Scheme:         configurator.Vault.Scheme,
 		Authentication: configurator.Vault.Authentication,
 		Credential:     configurator.Vault.Credential,
@@ -122,7 +122,7 @@ func main() {
 	//DAO config
 	var orderDao = dao.Order{
 		Host:     configurator.Database.Host,
-		Port:     fmt.Sprintf("%v", configurator.Database.Port),
+		Port:     configurator.Database.Port,
 		Database: configurator.Database.Name,
 		User:     configurator.Database.Username,
 		Password: configurator.Database.Password,
