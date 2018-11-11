@@ -9,8 +9,8 @@ host="localhost"
 port="8200"
 scheme="http"
 authentication="token"
-role="order"
-#credential="000000000000000000000000"
+[vault.credential]
+#token="000000000000000000000000"
 [vault.database]
 mount="database"
 role="order"

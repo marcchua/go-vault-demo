@@ -29,9 +29,16 @@ type Vault struct {
 	Port           string
 	Scheme         string
 	Authentication string
-	Credential     string
 	Role           string
 	Mount          string
+	Credential     Credential
+}
+
+type Credential struct {
+	Token          string
+	RoleID         string
+	SecretID       string
+	ServiceAccount string
 }
 
 type msiResponseJson struct {
@@ -68,12 +75,35 @@ func (v *Vault) Initialize() error {
 		if len(client.Token()) > 0 {
 			log.Println("Got token from VAULT_TOKEN")
 			break
-		} else if len(v.Credential) > 0 {
+		} else if len(v.Credential.Token) > 0 {
 			log.Println("Got token from config file")
-			token = v.Credential
+			token = v.Credential.Token
 		} else {
 			return errors.New("Could not get Vault token.")
 		}
+		client.SetToken(token)
+	case "approle":
+		log.Println("Using approle authentication")
+
+		//Check Mount
+		if len(v.Credential.RoleID) == 0 {
+			return errors.New("Role ID not found.")
+		}
+
+		//Check Mount
+		if len(v.Credential.SecretID) == 0 {
+			return errors.New("Secret ID not found.")
+		}
+
+		//Auth with approle vault
+		data := map[string]interface{}{"role_id": v.Credential.RoleID, "secret_id": v.Credential.SecretID}
+		secret, err := client.Logical().Write(fmt.Sprintf("auth/%s/login", v.Mount), data)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("Metadata: %v", secret.Auth.Metadata)
+		token = secret.Auth.ClientToken
 		client.SetToken(token)
 	case "kubernetes":
 		log.Println("Using kubernetes authentication")
@@ -91,13 +121,13 @@ func (v *Vault) Initialize() error {
 		log.Printf("Role: %s", v.Role)
 
 		//Check SA
-		if len(v.Credential) == 0 {
+		if len(v.Credential.ServiceAccount) == 0 {
 			return errors.New("K8s SA file not in config.")
 		}
-		log.Printf("SA: %s", v.Credential)
+		log.Printf("SA: %s", v.Credential.ServiceAccount)
 
 		//Get the JWT from POD
-		jwt, err := ioutil.ReadFile(v.Credential)
+		jwt, err := ioutil.ReadFile(v.Credential.ServiceAccount)
 		if err != nil {
 			return err
 		}
@@ -136,9 +166,9 @@ func (v *Vault) Initialize() error {
 
 		//If we have a creds/sa var we will try to assume it.
 		//If not we will create an STS session with our default creds.
-		if len(v.Credential) > 0 {
-			log.Printf("SA: %s", v.Credential)
-			creds := stscreds.NewCredentials(stsSession, v.Credential)
+		if len(v.Credential.ServiceAccount) > 0 {
+			log.Printf("SA: %s", v.Credential.ServiceAccount)
+			creds := stscreds.NewCredentials(stsSession, v.Credential.ServiceAccount)
 			svc = sts.New(stsSession, &aws.Config{Credentials: creds})
 		} else {
 			svc = sts.New(stsSession)
@@ -234,7 +264,7 @@ func (v *Vault) Initialize() error {
 		log.Printf("Role: %s", v.Role)
 
 		//Check SA
-		if len(v.Credential) == 0 {
+		if len(v.Credential.ServiceAccount) == 0 {
 			return errors.New("GCP SA not in config.")
 		}
 		log.Printf("SA: %s", v.Credential)
@@ -302,7 +332,7 @@ func (v *Vault) Initialize() error {
 		}
 
 		//If we are using the non default service account allow us to pass in the correct url
-		if len(v.Credential) > 0 {
+		if len(v.Credential.ServiceAccount) > 0 {
 			metaUrl = fmt.Sprintf("http://metadata/computeMetadata/v1/instance/service-accounts/%s/login", v.Credential)
 		} else {
 			metaUrl = "http://metadata/computeMetadata/v1/instance/service-accounts/default/identity"
@@ -364,7 +394,7 @@ func (v *Vault) Initialize() error {
 		log.Printf("Role: %s", v.Role)
 
 		//Check resource
-		if len(v.Credential) == 0 {
+		if len(v.Credential.ServiceAccount) == 0 {
 			return errors.New("Azure resource not in config.")
 		}
 		log.Printf("Credential: %s", v.Credential)
@@ -377,7 +407,7 @@ func (v *Vault) Initialize() error {
 		}
 		msiParams := url.Values{}
 		msiParams.Add("api-version", "2018-02-01")
-		msiParams.Add("resource", v.Credential)
+		msiParams.Add("resource", v.Credential.ServiceAccount)
 		msiEndpoint.RawQuery = msiParams.Encode()
 		req, err := http.NewRequest("GET", msiEndpoint.String(), nil)
 		if err != nil {

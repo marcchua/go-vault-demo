@@ -80,14 +80,21 @@ func main() {
 	configurator.Read()
 
 	//Server params
+	var credential = client.Credential{
+		Token:          configurator.Vault.Credential.Token,
+		RoleID:         configurator.Vault.Credential.RoleID,
+		SecretID:       configurator.Vault.Credential.SecretID,
+		ServiceAccount: configurator.Vault.Credential.ServiceAccount,
+	}
+
 	var vault = client.Vault{
 		Host:           configurator.Vault.Host,
 		Port:           configurator.Vault.Port,
 		Scheme:         configurator.Vault.Scheme,
 		Authentication: configurator.Vault.Authentication,
-		Credential:     configurator.Vault.Credential,
 		Role:           configurator.Vault.Role,
 		Mount:          configurator.Vault.Mount,
+		Credential:     credential,
 	}
 
 	//Init it
@@ -103,21 +110,19 @@ func main() {
 		log.Fatal("Could not get DB role from config.")
 	}
 
-	//Get our DB secrets into config
-	log.Printf("DB role: %s", configurator.Vault.Database.Role)
-	secret, err := vault.GetSecret(fmt.Sprintf("%s/creds/%s", configurator.Vault.Database.Mount, configurator.Vault.Database.Role))
-	if err != nil {
-		log.Fatal(err)
+	//See if we need to go get dyanmic DB creds
+	if len(configurator.Database.Username) == 0 && len(configurator.Database.Password) == 0 {
+		log.Printf("DB role: %s", configurator.Vault.Database.Role)
+		secret, err := vault.GetSecret(fmt.Sprintf("%s/creds/%s", configurator.Vault.Database.Mount, configurator.Vault.Database.Role))
+		if err != nil {
+			log.Fatal(err)
+		}
+		//Update our configuration with the dynamic creds
+		configurator.Database.Username = secret.Data["username"].(string)
+		configurator.Database.Password = secret.Data["password"].(string)
+		//Start our Goroutine Renewal for the DB creds
+		go vault.RenewSecret(secret)
 	}
-
-	//Update our dynamic configuration
-	configurator.Database.Username = secret.Data["username"].(string)
-	configurator.Database.Password = secret.Data["password"].(string)
-
-	//Start our Goroutine Renewal for the DB creds
-	log.Printf("DB User: %s", secret.Data["username"].(string))
-	//log.Println("DB Password: " + secret.Data["password"].(string))
-	go vault.RenewSecret(secret)
 
 	//DAO config
 	var orderDao = dao.Order{

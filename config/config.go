@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	//"strings"
 
 	"github.com/spf13/viper"
 )
@@ -24,8 +25,13 @@ type Config struct {
 		Authentication string `toml:"authentication"`
 		Mount          string `toml:"mount"`
 		Role           string `toml:"role"`
-		Credential     string `toml:"credential"`
-		Database       struct {
+		Credential     struct {
+			RoleID         string `mapstructure:"role-id"`
+			SecretID       string `mapstructure:"secret-id"`
+			Token          string `toml:"token"`
+			ServiceAccount string `toml:"serviceaccount"`
+		} `toml:"credential"`
+		Database struct {
 			Mount string `toml:"mount"`
 			Role  string `toml:"role"`
 		} `toml:"database"`
@@ -40,6 +46,8 @@ func (c *Config) Read() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
+	//viper.AutomaticEnv()
+	//viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	//Server Defaults
 	viper.SetDefault("Server.Port", "8080")
 	//Vault Defaults
