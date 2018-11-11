@@ -171,6 +171,7 @@ func (v *Vault) Initialize() error {
 			creds := stscreds.NewCredentials(stsSession, v.Credential.ServiceAccount)
 			svc = sts.New(stsSession, &aws.Config{Credentials: creds})
 		} else {
+			log.Printf("SA: Using IAM instance profile")
 			svc = sts.New(stsSession)
 		}
 
