@@ -3,7 +3,7 @@
 Connect example running on Kubernetes.  Consul connect injection must be enabled in your cluster to run this example. See the following resources.
 
 - [Helm](https://www.consul.io/docs/platform/k8s/helm.html)
-- [Connect Sidecar](https://www.consul.io/docs/platform/k8s/connect.html)
+- [Connect Envoy Sidecar](https://www.consul.io/docs/platform/k8s/connect.html)
 
 
 ## Steps
