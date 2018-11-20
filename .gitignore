@@ -4,3 +4,4 @@ terraform.tfstate*
 *.pem
 bin
 go-vault-demo
+ca.crt
