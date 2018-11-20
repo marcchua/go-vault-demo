@@ -1,9 +1,11 @@
 # go-vault-demo-connect
 
-[Connect Sidecar](https://www.consul.io/docs/platform/k8s/connect.html) example running on Kubernetes.
+Connect example running on Kubernetes.  Consul connect injection must be enabled in your cluster to run this example. See the following resources.
 
-Run the additional [vault script](vault.sh) in this folder to configure the Kubernetes trust relationship with Vault.
+- [Helm](https://www.consul.io/docs/platform/k8s/helm.html)
+- [Connect Sidecar](https://www.consul.io/docs/platform/k8s/connect.html)
 
-An example configmap is included for you to deploy to an existing Kubernetes cluster. The workload is modeled as code in the [go.tf](terraform/go.tf) terraform file.
 
-Consul connect injection must be enabled in your cluster to run this example.
+## Steps
+1. Run the additional [vault script](vault.sh) in this folder to configure the Kubernetes trust relationship with Vault.
+2. Run the [terraform example](terraform).
