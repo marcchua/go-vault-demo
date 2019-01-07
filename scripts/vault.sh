@@ -10,9 +10,12 @@ path "transit/encrypt/order" {
 }
 path "database/creds/order" {
   capabilities = ["read"]
+}
+path "pki/issue/order" {
+  capabilities = ["update"]
 }' | vault policy write order -
 
-#*****Postgres Confg*****
+#*****Postgres Config*****
 
 #Mount DB backend
 vault secrets enable database
@@ -30,10 +33,24 @@ vault write database/roles/order \
   default_ttl="1h" \
   max_ttl="24h"
 
-#*****Transit Confg*****
+#*****Transit Config*****
 
 #Mount transit backend
 vault secrets enable transit
 
 #Create transit key
 vault write -f transit/keys/order
+
+#*****PKI Config*****
+vault secrets enable pki
+vault secrets tune -max-lease-ttl=8760h pki
+vault write pki/root/generate/internal \
+    common_name=vault.hashidemos.io \
+    ttl=8760h
+vault write pki_int/config/urls issuing_certificates="http://127.0.0.1:8200/v1/pki_int/ca" crl_distribution_points="http://127.0.0.1:8200/v1/pki_int/crl"
+vault write pki/roles/order \
+    allowed_domains=order.hashidemos.io \
+    allow_bare_domains=true \
+    allow_localhost=true \
+    generate_lease=true \
+    max_ttl=72h

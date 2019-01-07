@@ -1,5 +1,5 @@
 [server]
-port="8080"
+port="3000"
 [database]
 host="localhost"
 port="5432"
@@ -17,3 +17,7 @@ role="order"
 [vault.transit]
 key="order"
 mount="transit"
+[vault.pki]
+mount="pki"
+role="order"
+cn="order.hashidemos.io"
