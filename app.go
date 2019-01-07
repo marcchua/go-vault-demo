@@ -23,7 +23,6 @@ import (
 )
 
 var orderService = service.Order{}
-var cert = tls.Certificate{}
 
 func AllOrdersEndpoint(w http.ResponseWriter, r *http.Request) {
 	orders, err := orderService.GetOrders()
