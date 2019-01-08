@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -139,6 +140,22 @@ func main() {
 		log.Fatal(err)
 	}
 
+	//Get our TLS cert from Vault
+	cert, err := vault.GetCertificate(fmt.Sprintf("%s/issue/%s", configurator.Vault.Pki.Mount, configurator.Vault.Pki.Role), configurator.Vault.Pki.CN)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	public := cert.Data["certificate"].(string)
+	private := cert.Data["private_key"].(string)
+	publicBytes := []byte(public)
+	privateBytes := []byte(private)
+
+	x509, err := tls.X509KeyPair(publicBytes, privateBytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	//Create service
 	orderService.Vault = &vault
 	orderService.Dao = &orderDao
@@ -161,20 +178,35 @@ func main() {
 	h.AddChecker("Postgres", pg)
 	r.Path("/health").Handler(h).Methods("GET")
 
+	//Server config - http
+	go func() {
+		log.Println(fmt.Sprintf("Server is now accepting http requests on port %v", configurator.Server.Port))
+		if err := http.ListenAndServe(fmt.Sprintf(":%v", configurator.Server.Port), r); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	//Server config - https
+	go func() {
+		tlsConfig := &tls.Config{Certificates: []tls.Certificate{x509}}
+		s := &http.Server{
+			Addr:      ":8443",
+			Handler:   r,
+			TLSConfig: tlsConfig,
+		}
+		log.Println(fmt.Sprintf("Server is now accepting https requests on port 8443"))
+		if err := s.ListenAndServeTLS("", ""); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
 	//Catch SIGINT AND SIGTERM to gracefully tear down tokens and secrets
 	var gracefulStop = make(chan os.Signal)
 	signal.Notify(gracefulStop, syscall.SIGTERM)
 	signal.Notify(gracefulStop, syscall.SIGINT)
-	go func() {
-		sig := <-gracefulStop
-		fmt.Printf("caught sig: %+v", sig)
-		vault.Close()
-		os.Exit(0)
-	}()
+	sig := <-gracefulStop
+	fmt.Printf("caught sig: %+v", sig)
+	vault.Close()
+	os.Exit(0)
 
-	//Start server
-	log.Println(fmt.Sprintf("Server is now accepting requests on port %v", configurator.Server.Port))
-	if err := http.ListenAndServe(fmt.Sprintf(":%v", configurator.Server.Port), r); err != nil {
-		log.Fatal(err)
-	}
 }

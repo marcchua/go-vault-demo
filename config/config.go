@@ -39,6 +39,11 @@ type Config struct {
 			Key   string `toml:"key"`
 			Mount string `toml:"mount"`
 		} `toml:"transit"`
+		Pki struct {
+			Role  string `toml:"role"`
+			CN    string `toml:"cn"`
+			Mount string `toml:"mount"`
+		} `toml:"pki"`
 	} `toml:"vault"`
 }
 

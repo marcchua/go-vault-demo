@@ -487,6 +487,18 @@ func (v *Vault) GetSecret(path string) (Secret, error) {
 	return *secret, nil
 }
 
+func (v *Vault) GetCertificate(path string, cn string) (Secret, error) {
+	log.Printf("Getting certificate: %s", path)
+	certData := map[string]interface{}{
+		"common_name": cn,
+	}
+	secret, err := client.Logical().Write(path, certData)
+	if err != nil {
+		return Secret{}, err
+	}
+	return *secret, nil
+}
+
 func (v *Vault) RenewToken() {
 	//If it is let's renew it by creating the payload
 	secret, err := client.Auth().Token().RenewSelf(0)
