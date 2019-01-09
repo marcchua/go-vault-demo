@@ -55,4 +55,5 @@ vault write pki/roles/order \
     allow_bare_domains=true \
     allow_localhost=true \
     generate_lease=true \
+    key_bits=4096 \
     max_ttl=72h
