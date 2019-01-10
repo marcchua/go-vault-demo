@@ -1,7 +1,6 @@
 #!/bin/bash
 
-#*****Policy*****
-
+#*****ACL Policy*****
 echo 'path "transit/decrypt/order" {
   capabilities = ["update"]
 }
@@ -16,17 +15,11 @@ path "pki/issue/order" {
 }' | vault policy write order -
 
 #*****Postgres Config*****
-
-#Mount DB backend
 vault secrets enable database
-
-#Create the DB connection
 vault write database/config/postgresql \
   plugin_name=postgresql-database-plugin \
   allowed_roles="*" \
   connection_url="postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable"
-
-#Create the DB order role
 vault write database/roles/order \
   db_name=postgresql \
   creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\"; GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\";" \
@@ -34,11 +27,7 @@ vault write database/roles/order \
   max_ttl="24h"
 
 #*****Transit Config*****
-
-#Mount transit backend
 vault secrets enable transit
-
-#Create transit key
 vault write -f transit/keys/order
 
 #*****PKI Config*****
