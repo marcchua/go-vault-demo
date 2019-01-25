@@ -77,24 +77,24 @@ func main() {
 	log.Println("Starting server initialization")
 
 	//Get our config from the file
-	var configurator = config.Config{}
-	configurator.Read()
+	var config = config.Config{}
+	config.Read()
 
 	//Server params
 	var credential = client.Credential{
-		Token:          configurator.Vault.Credential.Token,
-		RoleID:         configurator.Vault.Credential.RoleID,
-		SecretID:       configurator.Vault.Credential.SecretID,
-		ServiceAccount: configurator.Vault.Credential.ServiceAccount,
+		Token:          config.Vault.Credential.Token,
+		RoleID:         config.Vault.Credential.RoleID,
+		SecretID:       config.Vault.Credential.SecretID,
+		ServiceAccount: config.Vault.Credential.ServiceAccount,
 	}
 
 	var vault = client.Vault{
-		Host:           configurator.Vault.Host,
-		Port:           configurator.Vault.Port,
-		Scheme:         configurator.Vault.Scheme,
-		Authentication: configurator.Vault.Authentication,
-		Role:           configurator.Vault.Role,
-		Mount:          configurator.Vault.Mount,
+		Host:           config.Vault.Host,
+		Port:           config.Vault.Port,
+		Scheme:         config.Vault.Scheme,
+		Authentication: config.Vault.Authentication,
+		Role:           config.Vault.Role,
+		Mount:          config.Vault.Mount,
 		Credential:     credential,
 	}
 
@@ -107,31 +107,31 @@ func main() {
 
 	//Make sure we got a DB role
 	log.Println("Starting DB initialization")
-	if len(configurator.Vault.Database.Role) == 0 {
+	if len(config.Vault.Database.Role) == 0 {
 		log.Fatal("Could not get DB role from config.")
 	}
 
 	//See if we need to go get dyanmic DB creds
-	if len(configurator.Database.Username) == 0 && len(configurator.Database.Password) == 0 {
-		log.Printf("DB role: %s", configurator.Vault.Database.Role)
-		secret, err := vault.GetSecret(fmt.Sprintf("%s/creds/%s", configurator.Vault.Database.Mount, configurator.Vault.Database.Role))
+	if len(config.Database.Username) == 0 && len(config.Database.Password) == 0 {
+		log.Printf("DB role: %s", config.Vault.Database.Role)
+		secret, err := vault.GetSecret(fmt.Sprintf("%s/creds/%s", config.Vault.Database.Mount, config.Vault.Database.Role))
 		if err != nil {
 			log.Fatal(err)
 		}
 		//Update our configuration with the dynamic creds
-		configurator.Database.Username = secret.Data["username"].(string)
-		configurator.Database.Password = secret.Data["password"].(string)
+		config.Database.Username = secret.Data["username"].(string)
+		config.Database.Password = secret.Data["password"].(string)
 		//Start our Goroutine Renewal for the DB creds
 		go vault.RenewSecret(secret)
 	}
 
 	//DAO config
 	var orderDao = dao.Order{
-		Host:     configurator.Database.Host,
-		Port:     configurator.Database.Port,
-		Database: configurator.Database.Name,
-		User:     configurator.Database.Username,
-		Password: configurator.Database.Password,
+		Host:     config.Database.Host,
+		Port:     config.Database.Port,
+		Database: config.Database.Name,
+		User:     config.Database.Username,
+		Password: config.Database.Password,
 	}
 
 	//Check our DAO connection
@@ -141,7 +141,7 @@ func main() {
 	}
 
 	//Get our TLS cert from Vault
-	cert, err := vault.GetCertificate(fmt.Sprintf("%s/issue/%s", configurator.Vault.Pki.Mount, configurator.Vault.Pki.Role), configurator.Vault.Pki.CN)
+	cert, err := vault.GetCertificate(fmt.Sprintf("%s/issue/%s", config.Vault.Pki.Mount, config.Vault.Pki.Role), config.Vault.Pki.CN)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -159,8 +159,8 @@ func main() {
 	//Create service
 	orderService.Vault = &vault
 	orderService.Dao = &orderDao
-	orderService.Encyrption.Key = configurator.Vault.Transit.Key
-	orderService.Encyrption.Mount = configurator.Vault.Transit.Mount
+	orderService.Encyrption.Key = config.Vault.Transit.Key
+	orderService.Encyrption.Mount = config.Vault.Transit.Mount
 
 	//Router
 	r := mux.NewRouter()
@@ -172,7 +172,7 @@ func main() {
 
 	//Health Check Routes
 	h := health.NewHandler()
-	conn := fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable", configurator.Database.Username, configurator.Database.Password, configurator.Database.Name, configurator.Database.Host)
+	conn := fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable", config.Database.Username, config.Database.Password, config.Database.Name, config.Database.Host)
 	database, _ := sql.Open("postgres", conn)
 	pg := db.NewPostgreSQLChecker(database)
 	h.AddChecker("Postgres", pg)
@@ -180,8 +180,8 @@ func main() {
 
 	//Server config - http
 	go func() {
-		log.Println(fmt.Sprintf("Server is now accepting http requests on port %v", configurator.Server.Port))
-		if err := http.ListenAndServe(fmt.Sprintf(":%v", configurator.Server.Port), r); err != nil {
+		log.Println(fmt.Sprintf("Server is now accepting http requests on port %v", config.Server.Port))
+		if err := http.ListenAndServe(fmt.Sprintf(":%v", config.Server.Port), r); err != nil {
 			log.Fatal(err)
 		}
 	}()
