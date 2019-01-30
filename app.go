@@ -13,6 +13,7 @@ import (
 
 	"github.com/dimiro1/health"
 	"github.com/dimiro1/health/db"
+	"github.com/dimiro1/health/url"
 	"github.com/gorilla/mux"
 	"github.com/lanceplarsen/go-vault-demo/client"
 	"github.com/lanceplarsen/go-vault-demo/config"
@@ -176,6 +177,7 @@ func main() {
 	database, _ := sql.Open("postgres", conn)
 	pg := db.NewPostgreSQLChecker(database)
 	h.AddChecker("Postgres", pg)
+	h.AddChecker("Vault", url.NewChecker(fmt.Sprintf("%s://%s:%s/v1/sys/health?perfstandbyok=true", config.Vault.Scheme, config.Vault.Host, config.Vault.Port)))
 	r.Path("/health").Handler(h).Methods("GET")
 
 	//Server config - http
