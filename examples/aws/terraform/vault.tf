@@ -18,7 +18,7 @@ resource "vault_aws_auth_backend_role" "aws-ec2" {
   backend                        = "${vault_auth_backend.aws-ec2.path}"
   role                           = "order"
   auth_type                      = "ec2"
-  bound_ami_id                   = "${var.aws_ami}"
+  bound_ami_ids                  = "${var.aws_ami}"
   policies                       = ["order"]
 }
 
@@ -32,6 +32,6 @@ resource "vault_aws_auth_backend_role" "aws-iam" {
   backend                        = "${vault_auth_backend.aws-iam.path}"
   role                           = "order"
   auth_type                      = "iam"
-  bound_iam_principal_arn        = "${aws_iam_role.go.arn}"
+  bound_iam_principal_arns       = "${aws_iam_role.go.arn}"
   policies                       = ["order"]
 }
